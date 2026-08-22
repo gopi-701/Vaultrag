@@ -1,1 +1,426 @@
-export {};
+import { writeFile } from "node:fs/promises";
+
+import type { Role } from "@/lib/auth/claims";
+import {
+  BankingDocumentCollectionSchema,
+  CLASSIFICATION_CLEARANCE,
+  type BankingDocument,
+  type DocumentClassification,
+} from "@/lib/schemas/bankingDocument";
+
+interface DocumentOptions {
+  roles?: Role[];
+  branchId?: string | null;
+  clientId?: string | null;
+  dealId?: string | null;
+}
+
+function document(
+  id: string,
+  title: string,
+  docType: string,
+  classification: DocumentClassification,
+  content: string,
+  options: DocumentOptions = {},
+): BankingDocument {
+  return {
+    id,
+    title,
+    docType,
+    classification,
+    minimumClearance: CLASSIFICATION_CLEARANCE[classification],
+    allowedRoles: options.roles ?? [],
+    branchId: options.branchId ?? null,
+    clientId: options.clientId ?? null,
+    dealId: options.dealId ?? null,
+    content: `SYNTHETIC DATA — ${content}`,
+  };
+}
+
+const documents = BankingDocumentCollectionSchema.parse([
+  document(
+    "PUB-FAQ-001",
+    "Everyday Checking FAQ",
+    "PUBLIC_FAQ",
+    "PUBLIC",
+    "Customers can review fictional checking account opening, monthly statement, debit card, and transfer questions. This public guide contains no customer records.",
+  ),
+  document(
+    "PUB-FAQ-002",
+    "Digital Banking Security FAQ",
+    "PUBLIC_FAQ",
+    "PUBLIC",
+    "Public guidance explains demo password hygiene, multifactor authentication, suspicious message reporting, and safe online banking sessions without exposing internal controls.",
+  ),
+  document(
+    "PUB-FAQ-003",
+    "International Transfer FAQ",
+    "PUBLIC_FAQ",
+    "PUBLIC",
+    "General answers cover fictional wire timing, exchange-rate disclosures, beneficiary details, and transfer status. Restricted operations and customer-specific activity are excluded.",
+  ),
+  document(
+    "PUB-PROD-001",
+    "Harbor Everyday Savings",
+    "PUBLIC_PRODUCT",
+    "PUBLIC",
+    "A fictional savings product description covering variable interest, public eligibility, deposit access, and standard withdrawal information for prospective customers.",
+  ),
+  document(
+    "PUB-PROD-002",
+    "Harbor Premier Portfolio Service",
+    "PUBLIC_PRODUCT",
+    "PUBLIC",
+    "A public overview of a fictional advisory service discussing diversified portfolios, periodic reviews, investment risk, and advisor meetings without client recommendations.",
+  ),
+  document(
+    "PUB-PROD-003",
+    "Harbor Business Credit Overview",
+    "PUBLIC_PRODUCT",
+    "PUBLIC",
+    "A general description of fictional revolving credit and term lending products, including public application stages, covenant concepts, and credit review expectations.",
+  ),
+  document(
+    "PUB-BRANCH-001",
+    "NYC-01 Public Branch Information",
+    "PUBLIC_BRANCH",
+    "PUBLIC",
+    "Public location information for the fictional NYC-01 branch describes lobby services, accessible appointments, general opening hours, and consumer banking support.",
+  ),
+  document(
+    "PUB-BRANCH-002",
+    "LON-02 and SFO-03 Public Branch Information",
+    "PUBLIC_BRANCH",
+    "PUBLIC",
+    "Public location information compares fictional LON-02 and SFO-03 branch services, appointment channels, general hours, and available business banking consultations.",
+  ),
+
+  document(
+    "RTL-NYC-001",
+    "NYC-01 Opening and Closing Procedure",
+    "RETAIL_PROCEDURE",
+    "INTERNAL",
+    "NYC-01 staff follow dual-control opening, cash-area inspection, terminal readiness, and end-of-day reconciliation steps. Exceptions are recorded in the branch operations log.",
+    { roles: ["retail_banker"], branchId: "NYC-01" },
+  ),
+  document(
+    "RTL-LON-001",
+    "LON-02 Opening and Closing Procedure",
+    "RETAIL_PROCEDURE",
+    "INTERNAL",
+    "LON-02 staff follow dual-control opening, cash-area inspection, terminal readiness, and end-of-day reconciliation steps. Local exception routing differs from NYC-01.",
+    { roles: ["retail_banker"], branchId: "LON-02" },
+  ),
+  document(
+    "RTL-SFO-001",
+    "SFO-03 Weekend Branch Procedure",
+    "RETAIL_PROCEDURE",
+    "INTERNAL",
+    "SFO-03 weekend staff use reduced lobby coverage, dual-control vault access, appointment verification, and a dedicated reconciliation checklist for Saturday operations.",
+    { roles: ["retail_banker"], branchId: "SFO-03" },
+  ),
+  document(
+    "RTL-NYC-002",
+    "NYC-01 Teller Cash Difference Operations",
+    "RETAIL_OPERATIONS",
+    "INTERNAL",
+    "NYC-01 tellers recount the drawer, compare transaction journals, notify the operations lead, and document fictional cash differences before final balancing.",
+    { roles: ["retail_banker"], branchId: "NYC-01" },
+  ),
+  document(
+    "RTL-LON-002",
+    "LON-02 Teller Cash Difference Operations",
+    "RETAIL_OPERATIONS",
+    "INTERNAL",
+    "LON-02 tellers recount the drawer, compare transaction journals, notify the duty manager, and document fictional cash differences under the regional escalation timetable.",
+    { roles: ["retail_banker"], branchId: "LON-02" },
+  ),
+  document(
+    "RTL-POL-001",
+    "Consumer Overdraft Review Policy",
+    "RETAIL_POLICY",
+    "INTERNAL",
+    "Retail bankers review fictional overdraft patterns, customer notices, affordability indicators, and fee corrections using consistent consumer treatment standards across branches.",
+    { roles: ["retail_banker"], branchId: "ALL" },
+  ),
+  document(
+    "RTL-NYC-003",
+    "NYC-01 Holiday Staffing Memo",
+    "RETAIL_POLICY",
+    "INTERNAL",
+    "The NYC-01 memo assigns fictional lobby, teller, and appointment coverage for a holiday period and reiterates dual-control requirements during reduced staffing.",
+    { roles: ["retail_banker"], branchId: "NYC-01" },
+  ),
+  document(
+    "RTL-SFO-002",
+    "SFO-03 Consumer Account Exception Memo",
+    "RETAIL_POLICY",
+    "CONFIDENTIAL",
+    "The SFO-03 memo analyzes fictional account-opening exceptions, enhanced document review, escalation patterns, and corrective coaching for branch operations staff.",
+    { roles: ["retail_banker"], branchId: "SFO-03" },
+  ),
+
+  document(
+    "WLT-8832-001",
+    "CUST-8832 Investment Profile",
+    "WEALTH_PROFILE",
+    "CONFIDENTIAL",
+    "The fictional CUST-8832 profile records balanced risk tolerance, a seven-year horizon, liquidity reserves, tax-aware investing preferences, and limits on concentrated technology exposure.",
+    { roles: ["wealth_manager"], clientId: "CUST-8832" },
+  ),
+  document(
+    "WLT-9911-001",
+    "CUST-9911 Investment Profile",
+    "WEALTH_PROFILE",
+    "CONFIDENTIAL",
+    "The fictional CUST-9911 profile records balanced risk tolerance, an eight-year horizon, liquidity reserves, tax-aware investing preferences, and limits on concentrated healthcare exposure.",
+    { roles: ["wealth_manager"], clientId: "CUST-9911" },
+  ),
+  document(
+    "WLT-8832-002",
+    "CUST-8832 Portfolio Review",
+    "WEALTH_PORTFOLIO",
+    "CONFIDENTIAL",
+    "The fictional quarterly review discusses portfolio drift, bond duration, technology concentration, cash reserves, and rebalancing choices for CUST-8832 under a balanced mandate.",
+    { roles: ["wealth_manager"], clientId: "CUST-8832" },
+  ),
+  document(
+    "WLT-9911-002",
+    "CUST-9911 Portfolio Review",
+    "WEALTH_PORTFOLIO",
+    "CONFIDENTIAL",
+    "The fictional quarterly review discusses portfolio drift, bond duration, healthcare concentration, cash reserves, and rebalancing choices for CUST-9911 under a balanced mandate.",
+    { roles: ["wealth_manager"], clientId: "CUST-9911" },
+  ),
+  document(
+    "WLT-8832-003",
+    "CUST-8832 Investment Recommendation",
+    "WEALTH_RECOMMENDATION",
+    "CONFIDENTIAL",
+    "The fictional recommendation proposes gradual bond-duration reduction, diversified equity exposure, and a liquidity buffer while avoiding additional concentrated technology positions.",
+    { roles: ["wealth_manager"], clientId: "CUST-8832" },
+  ),
+  document(
+    "WLT-9911-003",
+    "CUST-9911 Investment Recommendation",
+    "WEALTH_RECOMMENDATION",
+    "CONFIDENTIAL",
+    "The fictional recommendation proposes gradual bond-duration reduction, diversified equity exposure, and a liquidity buffer while avoiding additional concentrated healthcare positions.",
+    { roles: ["wealth_manager"], clientId: "CUST-9911" },
+  ),
+  document(
+    "WLT-8832-004",
+    "CUST-8832 Client Meeting Notes",
+    "WEALTH_MEETING_NOTES",
+    "CONFIDENTIAL",
+    "Fictional meeting notes capture questions about volatility, retirement timing, charitable allocations, portfolio rebalancing, and follow-up analysis requested by CUST-8832.",
+    { roles: ["wealth_manager"], clientId: "CUST-8832" },
+  ),
+  document(
+    "WLT-9911-004",
+    "CUST-9911 Client Meeting Notes",
+    "WEALTH_MEETING_NOTES",
+    "CONFIDENTIAL",
+    "Fictional meeting notes capture questions about volatility, retirement timing, family trust allocations, portfolio rebalancing, and follow-up analysis requested by CUST-9911.",
+    { roles: ["wealth_manager"], clientId: "CUST-9911" },
+  ),
+
+  document(
+    "CRD-NYC-001",
+    "NYC-01 Credit Policy",
+    "CREDIT_POLICY",
+    "INTERNAL",
+    "NYC-01 policy describes fictional borrower intake, financial statement collection, risk grading, covenant selection, and escalation before a corporate credit submission.",
+    { roles: ["retail_banker", "credit_analyst"], branchId: "NYC-01" },
+  ),
+  document(
+    "CRD-LON-001",
+    "LON-02 Credit Policy",
+    "CREDIT_POLICY",
+    "INTERNAL",
+    "LON-02 policy describes fictional borrower intake, financial statement collection, risk grading, covenant selection, and regional escalation before a corporate credit submission.",
+    { roles: ["retail_banker", "credit_analyst"], branchId: "LON-02" },
+  ),
+  document(
+    "CRD-SFO-001",
+    "SFO-03 Meridian Manufacturing Credit Memo",
+    "CREDIT_MEMO",
+    "CONFIDENTIAL",
+    "A fictional credit memo reviews Meridian Manufacturing revenue pressure, leverage, liquidity, collateral coverage, and proposed covenant protection for an SFO-03 lending request.",
+    { roles: ["credit_analyst"], branchId: "SFO-03" },
+  ),
+  document(
+    "CRD-LON-002",
+    "LON-02 Meridian Logistics Credit Memo",
+    "CREDIT_MEMO",
+    "CONFIDENTIAL",
+    "A fictional credit memo reviews Meridian Logistics revenue pressure, leverage, liquidity, collateral coverage, and proposed covenant protection for a LON-02 lending request.",
+    { roles: ["credit_analyst"], branchId: "LON-02" },
+  ),
+  document(
+    "CRD-NYC-002",
+    "Northstar Holdings Covenant Review",
+    "CREDIT_COVENANT",
+    "CONFIDENTIAL",
+    "The fictional review tests Northstar Holdings leverage and interest coverage, discusses a near-threshold quarter, and proposes monitoring without changing the loan structure.",
+    { roles: ["credit_analyst"], branchId: "NYC-01" },
+  ),
+  document(
+    "CRD-SFO-002",
+    "Northstar Components Covenant Review",
+    "CREDIT_COVENANT",
+    "CONFIDENTIAL",
+    "The fictional review tests Northstar Components leverage and interest coverage, discusses a near-threshold quarter, and proposes enhanced monitoring for the SFO-03 exposure.",
+    { roles: ["credit_analyst"], branchId: "SFO-03" },
+  ),
+  document(
+    "CRD-COM-001",
+    "Meridian Loan Committee Materials",
+    "CREDIT_COMMITTEE",
+    "RESTRICTED",
+    "Fictional committee materials compare Meridian Manufacturing and Meridian Logistics risk grades, downside cash flow, covenant headroom, and approval conditions across branches.",
+    {
+      roles: ["credit_analyst", "compliance_officer"],
+      branchId: "ALL",
+    },
+  ),
+  document(
+    "CRD-RISK-001",
+    "Northstar Borrower Risk Report",
+    "CREDIT_RISK_REPORT",
+    "CONFIDENTIAL",
+    "A fictional cross-branch risk report compares Northstar entities, sector demand, liquidity, leverage, covenant performance, and early-warning indicators for credit monitoring.",
+    { roles: ["credit_analyst"], branchId: "ALL" },
+  ),
+  document(
+    "CRD-RISK-002",
+    "Apollo Industrial Borrower Risk Report",
+    "CREDIT_RISK_REPORT",
+    "RESTRICTED",
+    "A fictional borrower report evaluates Apollo Industrial cash flow, refinancing risk, covenant headroom, and collateral. It is unrelated to the investment-banking Project Apollo deal.",
+    { roles: ["credit_analyst"], branchId: "LON-02" },
+  ),
+
+  document(
+    "IB-APL-001",
+    "Project Apollo Teaser",
+    "INVESTMENT_BANKING_TEASER",
+    "RESTRICTED",
+    "The fictional Project Apollo teaser describes a cloud payments company, recurring revenue, customer retention, growth opportunities, and an illustrative transaction process.",
+    { roles: ["investment_banker"], dealId: "PROJECT_APOLLO" },
+  ),
+  document(
+    "IB-ATL-001",
+    "Project Atlas Teaser",
+    "INVESTMENT_BANKING_TEASER",
+    "RESTRICTED",
+    "The fictional Project Atlas teaser describes a cloud logistics company, recurring revenue, customer retention, growth opportunities, and an illustrative transaction process.",
+    { roles: ["investment_banker"], dealId: "PROJECT_ATLAS" },
+  ),
+  document(
+    "IB-APL-002",
+    "Project Apollo Valuation Memo",
+    "INVESTMENT_BANKING_VALUATION",
+    "RESTRICTED",
+    "The fictional Apollo valuation applies recurring-revenue multiples, discounted cash flow, retention sensitivity, and downside cases to a cloud payments transaction.",
+    { roles: ["investment_banker"], dealId: "PROJECT_APOLLO" },
+  ),
+  document(
+    "IB-ATL-002",
+    "Project Atlas Valuation Memo",
+    "INVESTMENT_BANKING_VALUATION",
+    "RESTRICTED",
+    "The fictional Atlas valuation applies recurring-revenue multiples, discounted cash flow, retention sensitivity, and downside cases to a cloud logistics transaction.",
+    { roles: ["investment_banker"], dealId: "PROJECT_ATLAS" },
+  ),
+  document(
+    "IB-APL-003",
+    "Project Apollo Diligence Notes",
+    "INVESTMENT_BANKING_DILIGENCE",
+    "RESTRICTED",
+    "Fictional diligence notes examine Apollo customer cohorts, payment volume, revenue recognition, cyber controls, management forecasts, and open transaction questions.",
+    {
+      roles: ["investment_banker", "compliance_officer"],
+      dealId: "PROJECT_APOLLO",
+    },
+  ),
+  document(
+    "IB-APL-004",
+    "Project Apollo Committee Notes",
+    "INVESTMENT_BANKING_COMMITTEE",
+    "RESTRICTED",
+    "Fictional committee notes discuss Apollo valuation ranges, buyer feedback, diligence gaps, retention sensitivity, transaction timing, and approval conditions.",
+    { roles: ["investment_banker"], dealId: "PROJECT_APOLLO" },
+  ),
+
+  document(
+    "CMP-AML-001",
+    "Enterprise AML Escalation Procedure",
+    "COMPLIANCE_AML",
+    "INTERNAL",
+    "The fictional enterprise procedure explains alert triage, evidence preservation, escalation ownership, confidentiality, and review checkpoints without describing real investigations.",
+    { roles: ["compliance_officer"] },
+  ),
+  document(
+    "CMP-AML-002",
+    "Cross-Border Payment AML Procedure",
+    "COMPLIANCE_AML",
+    "CONFIDENTIAL",
+    "The fictional procedure covers cross-border alert context, customer risk factors, payment patterns, sanctions screening handoffs, and documented compliance review.",
+    { roles: ["compliance_officer"] },
+  ),
+  document(
+    "CMP-POL-001",
+    "Internal Compliance Case Handling Policy",
+    "COMPLIANCE_POLICY",
+    "INTERNAL",
+    "The fictional policy sets case ownership, need-to-know handling, evidence standards, quality review, retention expectations, and independent escalation across banking teams.",
+    { roles: ["compliance_officer"] },
+  ),
+  document(
+    "CMP-SAR-001",
+    "Suspicious Activity Review: Meridian Pattern",
+    "COMPLIANCE_SAR",
+    "RESTRICTED",
+    "A wholly fictional review analyzes repeated Meridian-named payment counterparties, transaction velocity, stated purpose, alert disposition, and documented escalation rationale.",
+    { roles: ["compliance_officer"], clientId: "ALL" },
+  ),
+  document(
+    "CMP-AUD-001",
+    "2026 Synthetic Access-Control Audit",
+    "COMPLIANCE_AUDIT",
+    "AUDIT",
+    "The fictional audit evaluates role assignments, branch and client scoping, deal segregation, clearance enforcement, access logs, exceptions, and remediation evidence.",
+    {
+      roles: ["compliance_officer"],
+      branchId: "ALL",
+      clientId: "ALL",
+      dealId: "ALL",
+    },
+  ),
+  document(
+    "CMP-AUD-002",
+    "Project Apollo Deal Room Access Audit",
+    "COMPLIANCE_AUDIT",
+    "AUDIT",
+    "The fictional audit reviews Project Apollo deal-room membership, diligence downloads, restricted valuation access, approval evidence, access removals, and exception remediation.",
+    { roles: ["compliance_officer"], dealId: "PROJECT_APOLLO" },
+  ),
+  document(
+    "CMP-AUD-003",
+    "Synthetic Wealth Advice Suitability Audit",
+    "COMPLIANCE_AUDIT",
+    "AUDIT",
+    "The fictional audit samples CUST-8832 and CUST-9911 portfolio reviews, risk profiles, recommendations, meeting notes, suitability evidence, and supervisory approvals.",
+    { roles: ["compliance_officer"], clientId: "ALL" },
+  ),
+]);
+
+async function main() {
+  const outputUrl = new URL("../data/synthetic_docs.json", import.meta.url);
+  await writeFile(outputUrl, `${JSON.stringify(documents, null, 2)}\n`, "utf8");
+
+  console.log(`Generated ${documents.length} synthetic banking documents.`);
+}
+
+void main();

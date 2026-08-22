@@ -1,0 +1,634 @@
+[
+  {
+    "id": "PUB-FAQ-001",
+    "title": "Everyday Checking FAQ",
+    "docType": "PUBLIC_FAQ",
+    "classification": "PUBLIC",
+    "minimumClearance": 0,
+    "allowedRoles": [],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — Customers can review fictional checking account opening, monthly statement, debit card, and transfer questions. This public guide contains no customer records."
+  },
+  {
+    "id": "PUB-FAQ-002",
+    "title": "Digital Banking Security FAQ",
+    "docType": "PUBLIC_FAQ",
+    "classification": "PUBLIC",
+    "minimumClearance": 0,
+    "allowedRoles": [],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — Public guidance explains demo password hygiene, multifactor authentication, suspicious message reporting, and safe online banking sessions without exposing internal controls."
+  },
+  {
+    "id": "PUB-FAQ-003",
+    "title": "International Transfer FAQ",
+    "docType": "PUBLIC_FAQ",
+    "classification": "PUBLIC",
+    "minimumClearance": 0,
+    "allowedRoles": [],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — General answers cover fictional wire timing, exchange-rate disclosures, beneficiary details, and transfer status. Restricted operations and customer-specific activity are excluded."
+  },
+  {
+    "id": "PUB-PROD-001",
+    "title": "Harbor Everyday Savings",
+    "docType": "PUBLIC_PRODUCT",
+    "classification": "PUBLIC",
+    "minimumClearance": 0,
+    "allowedRoles": [],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — A fictional savings product description covering variable interest, public eligibility, deposit access, and standard withdrawal information for prospective customers."
+  },
+  {
+    "id": "PUB-PROD-002",
+    "title": "Harbor Premier Portfolio Service",
+    "docType": "PUBLIC_PRODUCT",
+    "classification": "PUBLIC",
+    "minimumClearance": 0,
+    "allowedRoles": [],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — A public overview of a fictional advisory service discussing diversified portfolios, periodic reviews, investment risk, and advisor meetings without client recommendations."
+  },
+  {
+    "id": "PUB-PROD-003",
+    "title": "Harbor Business Credit Overview",
+    "docType": "PUBLIC_PRODUCT",
+    "classification": "PUBLIC",
+    "minimumClearance": 0,
+    "allowedRoles": [],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — A general description of fictional revolving credit and term lending products, including public application stages, covenant concepts, and credit review expectations."
+  },
+  {
+    "id": "PUB-BRANCH-001",
+    "title": "NYC-01 Public Branch Information",
+    "docType": "PUBLIC_BRANCH",
+    "classification": "PUBLIC",
+    "minimumClearance": 0,
+    "allowedRoles": [],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — Public location information for the fictional NYC-01 branch describes lobby services, accessible appointments, general opening hours, and consumer banking support."
+  },
+  {
+    "id": "PUB-BRANCH-002",
+    "title": "LON-02 and SFO-03 Public Branch Information",
+    "docType": "PUBLIC_BRANCH",
+    "classification": "PUBLIC",
+    "minimumClearance": 0,
+    "allowedRoles": [],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — Public location information compares fictional LON-02 and SFO-03 branch services, appointment channels, general hours, and available business banking consultations."
+  },
+  {
+    "id": "RTL-NYC-001",
+    "title": "NYC-01 Opening and Closing Procedure",
+    "docType": "RETAIL_PROCEDURE",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "retail_banker"
+    ],
+    "branchId": "NYC-01",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — NYC-01 staff follow dual-control opening, cash-area inspection, terminal readiness, and end-of-day reconciliation steps. Exceptions are recorded in the branch operations log."
+  },
+  {
+    "id": "RTL-LON-001",
+    "title": "LON-02 Opening and Closing Procedure",
+    "docType": "RETAIL_PROCEDURE",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "retail_banker"
+    ],
+    "branchId": "LON-02",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — LON-02 staff follow dual-control opening, cash-area inspection, terminal readiness, and end-of-day reconciliation steps. Local exception routing differs from NYC-01."
+  },
+  {
+    "id": "RTL-SFO-001",
+    "title": "SFO-03 Weekend Branch Procedure",
+    "docType": "RETAIL_PROCEDURE",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "retail_banker"
+    ],
+    "branchId": "SFO-03",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — SFO-03 weekend staff use reduced lobby coverage, dual-control vault access, appointment verification, and a dedicated reconciliation checklist for Saturday operations."
+  },
+  {
+    "id": "RTL-NYC-002",
+    "title": "NYC-01 Teller Cash Difference Operations",
+    "docType": "RETAIL_OPERATIONS",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "retail_banker"
+    ],
+    "branchId": "NYC-01",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — NYC-01 tellers recount the drawer, compare transaction journals, notify the operations lead, and document fictional cash differences before final balancing."
+  },
+  {
+    "id": "RTL-LON-002",
+    "title": "LON-02 Teller Cash Difference Operations",
+    "docType": "RETAIL_OPERATIONS",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "retail_banker"
+    ],
+    "branchId": "LON-02",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — LON-02 tellers recount the drawer, compare transaction journals, notify the duty manager, and document fictional cash differences under the regional escalation timetable."
+  },
+  {
+    "id": "RTL-POL-001",
+    "title": "Consumer Overdraft Review Policy",
+    "docType": "RETAIL_POLICY",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "retail_banker"
+    ],
+    "branchId": "ALL",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — Retail bankers review fictional overdraft patterns, customer notices, affordability indicators, and fee corrections using consistent consumer treatment standards across branches."
+  },
+  {
+    "id": "RTL-NYC-003",
+    "title": "NYC-01 Holiday Staffing Memo",
+    "docType": "RETAIL_POLICY",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "retail_banker"
+    ],
+    "branchId": "NYC-01",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The NYC-01 memo assigns fictional lobby, teller, and appointment coverage for a holiday period and reiterates dual-control requirements during reduced staffing."
+  },
+  {
+    "id": "RTL-SFO-002",
+    "title": "SFO-03 Consumer Account Exception Memo",
+    "docType": "RETAIL_POLICY",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "retail_banker"
+    ],
+    "branchId": "SFO-03",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The SFO-03 memo analyzes fictional account-opening exceptions, enhanced document review, escalation patterns, and corrective coaching for branch operations staff."
+  },
+  {
+    "id": "WLT-8832-001",
+    "title": "CUST-8832 Investment Profile",
+    "docType": "WEALTH_PROFILE",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "wealth_manager"
+    ],
+    "branchId": null,
+    "clientId": "CUST-8832",
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional CUST-8832 profile records balanced risk tolerance, a seven-year horizon, liquidity reserves, tax-aware investing preferences, and limits on concentrated technology exposure."
+  },
+  {
+    "id": "WLT-9911-001",
+    "title": "CUST-9911 Investment Profile",
+    "docType": "WEALTH_PROFILE",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "wealth_manager"
+    ],
+    "branchId": null,
+    "clientId": "CUST-9911",
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional CUST-9911 profile records balanced risk tolerance, an eight-year horizon, liquidity reserves, tax-aware investing preferences, and limits on concentrated healthcare exposure."
+  },
+  {
+    "id": "WLT-8832-002",
+    "title": "CUST-8832 Portfolio Review",
+    "docType": "WEALTH_PORTFOLIO",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "wealth_manager"
+    ],
+    "branchId": null,
+    "clientId": "CUST-8832",
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional quarterly review discusses portfolio drift, bond duration, technology concentration, cash reserves, and rebalancing choices for CUST-8832 under a balanced mandate."
+  },
+  {
+    "id": "WLT-9911-002",
+    "title": "CUST-9911 Portfolio Review",
+    "docType": "WEALTH_PORTFOLIO",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "wealth_manager"
+    ],
+    "branchId": null,
+    "clientId": "CUST-9911",
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional quarterly review discusses portfolio drift, bond duration, healthcare concentration, cash reserves, and rebalancing choices for CUST-9911 under a balanced mandate."
+  },
+  {
+    "id": "WLT-8832-003",
+    "title": "CUST-8832 Investment Recommendation",
+    "docType": "WEALTH_RECOMMENDATION",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "wealth_manager"
+    ],
+    "branchId": null,
+    "clientId": "CUST-8832",
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional recommendation proposes gradual bond-duration reduction, diversified equity exposure, and a liquidity buffer while avoiding additional concentrated technology positions."
+  },
+  {
+    "id": "WLT-9911-003",
+    "title": "CUST-9911 Investment Recommendation",
+    "docType": "WEALTH_RECOMMENDATION",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "wealth_manager"
+    ],
+    "branchId": null,
+    "clientId": "CUST-9911",
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional recommendation proposes gradual bond-duration reduction, diversified equity exposure, and a liquidity buffer while avoiding additional concentrated healthcare positions."
+  },
+  {
+    "id": "WLT-8832-004",
+    "title": "CUST-8832 Client Meeting Notes",
+    "docType": "WEALTH_MEETING_NOTES",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "wealth_manager"
+    ],
+    "branchId": null,
+    "clientId": "CUST-8832",
+    "dealId": null,
+    "content": "SYNTHETIC DATA — Fictional meeting notes capture questions about volatility, retirement timing, charitable allocations, portfolio rebalancing, and follow-up analysis requested by CUST-8832."
+  },
+  {
+    "id": "WLT-9911-004",
+    "title": "CUST-9911 Client Meeting Notes",
+    "docType": "WEALTH_MEETING_NOTES",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "wealth_manager"
+    ],
+    "branchId": null,
+    "clientId": "CUST-9911",
+    "dealId": null,
+    "content": "SYNTHETIC DATA — Fictional meeting notes capture questions about volatility, retirement timing, family trust allocations, portfolio rebalancing, and follow-up analysis requested by CUST-9911."
+  },
+  {
+    "id": "CRD-NYC-001",
+    "title": "NYC-01 Credit Policy",
+    "docType": "CREDIT_POLICY",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "retail_banker",
+      "credit_analyst"
+    ],
+    "branchId": "NYC-01",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — NYC-01 policy describes fictional borrower intake, financial statement collection, risk grading, covenant selection, and escalation before a corporate credit submission."
+  },
+  {
+    "id": "CRD-LON-001",
+    "title": "LON-02 Credit Policy",
+    "docType": "CREDIT_POLICY",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "retail_banker",
+      "credit_analyst"
+    ],
+    "branchId": "LON-02",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — LON-02 policy describes fictional borrower intake, financial statement collection, risk grading, covenant selection, and regional escalation before a corporate credit submission."
+  },
+  {
+    "id": "CRD-SFO-001",
+    "title": "SFO-03 Meridian Manufacturing Credit Memo",
+    "docType": "CREDIT_MEMO",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "credit_analyst"
+    ],
+    "branchId": "SFO-03",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — A fictional credit memo reviews Meridian Manufacturing revenue pressure, leverage, liquidity, collateral coverage, and proposed covenant protection for an SFO-03 lending request."
+  },
+  {
+    "id": "CRD-LON-002",
+    "title": "LON-02 Meridian Logistics Credit Memo",
+    "docType": "CREDIT_MEMO",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "credit_analyst"
+    ],
+    "branchId": "LON-02",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — A fictional credit memo reviews Meridian Logistics revenue pressure, leverage, liquidity, collateral coverage, and proposed covenant protection for a LON-02 lending request."
+  },
+  {
+    "id": "CRD-NYC-002",
+    "title": "Northstar Holdings Covenant Review",
+    "docType": "CREDIT_COVENANT",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "credit_analyst"
+    ],
+    "branchId": "NYC-01",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional review tests Northstar Holdings leverage and interest coverage, discusses a near-threshold quarter, and proposes monitoring without changing the loan structure."
+  },
+  {
+    "id": "CRD-SFO-002",
+    "title": "Northstar Components Covenant Review",
+    "docType": "CREDIT_COVENANT",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "credit_analyst"
+    ],
+    "branchId": "SFO-03",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional review tests Northstar Components leverage and interest coverage, discusses a near-threshold quarter, and proposes enhanced monitoring for the SFO-03 exposure."
+  },
+  {
+    "id": "CRD-COM-001",
+    "title": "Meridian Loan Committee Materials",
+    "docType": "CREDIT_COMMITTEE",
+    "classification": "RESTRICTED",
+    "minimumClearance": 3,
+    "allowedRoles": [
+      "credit_analyst",
+      "compliance_officer"
+    ],
+    "branchId": "ALL",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — Fictional committee materials compare Meridian Manufacturing and Meridian Logistics risk grades, downside cash flow, covenant headroom, and approval conditions across branches."
+  },
+  {
+    "id": "CRD-RISK-001",
+    "title": "Northstar Borrower Risk Report",
+    "docType": "CREDIT_RISK_REPORT",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "credit_analyst"
+    ],
+    "branchId": "ALL",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — A fictional cross-branch risk report compares Northstar entities, sector demand, liquidity, leverage, covenant performance, and early-warning indicators for credit monitoring."
+  },
+  {
+    "id": "CRD-RISK-002",
+    "title": "Apollo Industrial Borrower Risk Report",
+    "docType": "CREDIT_RISK_REPORT",
+    "classification": "RESTRICTED",
+    "minimumClearance": 3,
+    "allowedRoles": [
+      "credit_analyst"
+    ],
+    "branchId": "LON-02",
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — A fictional borrower report evaluates Apollo Industrial cash flow, refinancing risk, covenant headroom, and collateral. It is unrelated to the investment-banking Project Apollo deal."
+  },
+  {
+    "id": "IB-APL-001",
+    "title": "Project Apollo Teaser",
+    "docType": "INVESTMENT_BANKING_TEASER",
+    "classification": "RESTRICTED",
+    "minimumClearance": 3,
+    "allowedRoles": [
+      "investment_banker"
+    ],
+    "branchId": null,
+    "clientId": null,
+    "dealId": "PROJECT_APOLLO",
+    "content": "SYNTHETIC DATA — The fictional Project Apollo teaser describes a cloud payments company, recurring revenue, customer retention, growth opportunities, and an illustrative transaction process."
+  },
+  {
+    "id": "IB-ATL-001",
+    "title": "Project Atlas Teaser",
+    "docType": "INVESTMENT_BANKING_TEASER",
+    "classification": "RESTRICTED",
+    "minimumClearance": 3,
+    "allowedRoles": [
+      "investment_banker"
+    ],
+    "branchId": null,
+    "clientId": null,
+    "dealId": "PROJECT_ATLAS",
+    "content": "SYNTHETIC DATA — The fictional Project Atlas teaser describes a cloud logistics company, recurring revenue, customer retention, growth opportunities, and an illustrative transaction process."
+  },
+  {
+    "id": "IB-APL-002",
+    "title": "Project Apollo Valuation Memo",
+    "docType": "INVESTMENT_BANKING_VALUATION",
+    "classification": "RESTRICTED",
+    "minimumClearance": 3,
+    "allowedRoles": [
+      "investment_banker"
+    ],
+    "branchId": null,
+    "clientId": null,
+    "dealId": "PROJECT_APOLLO",
+    "content": "SYNTHETIC DATA — The fictional Apollo valuation applies recurring-revenue multiples, discounted cash flow, retention sensitivity, and downside cases to a cloud payments transaction."
+  },
+  {
+    "id": "IB-ATL-002",
+    "title": "Project Atlas Valuation Memo",
+    "docType": "INVESTMENT_BANKING_VALUATION",
+    "classification": "RESTRICTED",
+    "minimumClearance": 3,
+    "allowedRoles": [
+      "investment_banker"
+    ],
+    "branchId": null,
+    "clientId": null,
+    "dealId": "PROJECT_ATLAS",
+    "content": "SYNTHETIC DATA — The fictional Atlas valuation applies recurring-revenue multiples, discounted cash flow, retention sensitivity, and downside cases to a cloud logistics transaction."
+  },
+  {
+    "id": "IB-APL-003",
+    "title": "Project Apollo Diligence Notes",
+    "docType": "INVESTMENT_BANKING_DILIGENCE",
+    "classification": "RESTRICTED",
+    "minimumClearance": 3,
+    "allowedRoles": [
+      "investment_banker",
+      "compliance_officer"
+    ],
+    "branchId": null,
+    "clientId": null,
+    "dealId": "PROJECT_APOLLO",
+    "content": "SYNTHETIC DATA — Fictional diligence notes examine Apollo customer cohorts, payment volume, revenue recognition, cyber controls, management forecasts, and open transaction questions."
+  },
+  {
+    "id": "IB-APL-004",
+    "title": "Project Apollo Committee Notes",
+    "docType": "INVESTMENT_BANKING_COMMITTEE",
+    "classification": "RESTRICTED",
+    "minimumClearance": 3,
+    "allowedRoles": [
+      "investment_banker"
+    ],
+    "branchId": null,
+    "clientId": null,
+    "dealId": "PROJECT_APOLLO",
+    "content": "SYNTHETIC DATA — Fictional committee notes discuss Apollo valuation ranges, buyer feedback, diligence gaps, retention sensitivity, transaction timing, and approval conditions."
+  },
+  {
+    "id": "CMP-AML-001",
+    "title": "Enterprise AML Escalation Procedure",
+    "docType": "COMPLIANCE_AML",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "compliance_officer"
+    ],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional enterprise procedure explains alert triage, evidence preservation, escalation ownership, confidentiality, and review checkpoints without describing real investigations."
+  },
+  {
+    "id": "CMP-AML-002",
+    "title": "Cross-Border Payment AML Procedure",
+    "docType": "COMPLIANCE_AML",
+    "classification": "CONFIDENTIAL",
+    "minimumClearance": 2,
+    "allowedRoles": [
+      "compliance_officer"
+    ],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional procedure covers cross-border alert context, customer risk factors, payment patterns, sanctions screening handoffs, and documented compliance review."
+  },
+  {
+    "id": "CMP-POL-001",
+    "title": "Internal Compliance Case Handling Policy",
+    "docType": "COMPLIANCE_POLICY",
+    "classification": "INTERNAL",
+    "minimumClearance": 1,
+    "allowedRoles": [
+      "compliance_officer"
+    ],
+    "branchId": null,
+    "clientId": null,
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional policy sets case ownership, need-to-know handling, evidence standards, quality review, retention expectations, and independent escalation across banking teams."
+  },
+  {
+    "id": "CMP-SAR-001",
+    "title": "Suspicious Activity Review: Meridian Pattern",
+    "docType": "COMPLIANCE_SAR",
+    "classification": "RESTRICTED",
+    "minimumClearance": 3,
+    "allowedRoles": [
+      "compliance_officer"
+    ],
+    "branchId": null,
+    "clientId": "ALL",
+    "dealId": null,
+    "content": "SYNTHETIC DATA — A wholly fictional review analyzes repeated Meridian-named payment counterparties, transaction velocity, stated purpose, alert disposition, and documented escalation rationale."
+  },
+  {
+    "id": "CMP-AUD-001",
+    "title": "2026 Synthetic Access-Control Audit",
+    "docType": "COMPLIANCE_AUDIT",
+    "classification": "AUDIT",
+    "minimumClearance": 4,
+    "allowedRoles": [
+      "compliance_officer"
+    ],
+    "branchId": "ALL",
+    "clientId": "ALL",
+    "dealId": "ALL",
+    "content": "SYNTHETIC DATA — The fictional audit evaluates role assignments, branch and client scoping, deal segregation, clearance enforcement, access logs, exceptions, and remediation evidence."
+  },
+  {
+    "id": "CMP-AUD-002",
+    "title": "Project Apollo Deal Room Access Audit",
+    "docType": "COMPLIANCE_AUDIT",
+    "classification": "AUDIT",
+    "minimumClearance": 4,
+    "allowedRoles": [
+      "compliance_officer"
+    ],
+    "branchId": null,
+    "clientId": null,
+    "dealId": "PROJECT_APOLLO",
+    "content": "SYNTHETIC DATA — The fictional audit reviews Project Apollo deal-room membership, diligence downloads, restricted valuation access, approval evidence, access removals, and exception remediation."
+  },
+  {
+    "id": "CMP-AUD-003",
+    "title": "Synthetic Wealth Advice Suitability Audit",
+    "docType": "COMPLIANCE_AUDIT",
+    "classification": "AUDIT",
+    "minimumClearance": 4,
+    "allowedRoles": [
+      "compliance_officer"
+    ],
+    "branchId": null,
+    "clientId": "ALL",
+    "dealId": null,
+    "content": "SYNTHETIC DATA — The fictional audit samples CUST-8832 and CUST-9911 portfolio reviews, risk profiles, recommendations, meeting notes, suitability evidence, and supervisory approvals."
+  }
+]
