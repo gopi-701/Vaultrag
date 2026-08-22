@@ -2,25 +2,43 @@
   "name": "vaultrag",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "data:generate": "tsx scripts/generate-synthetic-data.ts",
+    "db:setup": "tsx scripts/setup-db.ts",
+    "db:ingest": "tsx scripts/ingest.ts"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^4.0.30",
+    "@qdrant/js-client-rest": "^1.19.0",
+    "ai": "^7.0.77",
+    "cohere-ai": "^8.0.1",
+    "jsonwebtoken": "^9.0.3",
     "next": "16.3.2",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.12",
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
