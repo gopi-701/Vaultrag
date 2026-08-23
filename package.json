@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "data:generate": "tsx scripts/generate-synthetic-data.ts",
+    "documents:prepare": "tsx scripts/prepare-documents.ts",
     "db:setup": "tsx scripts/setup-db.ts",
     "db:ingest": "tsx scripts/ingest.ts"
   },

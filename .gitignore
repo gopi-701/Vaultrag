@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# generated retrieval artifacts
+/data/prepared_chunks.json
+
 # next.js
 /.next/
 /out/
