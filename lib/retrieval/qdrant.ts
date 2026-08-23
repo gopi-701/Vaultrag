@@ -11,6 +11,7 @@ const PAYLOAD_INDEXES = [
   ["dealId", "keyword"],
   ["classification", "keyword"],
   ["documentId", "keyword"],
+  ["datasetId", "keyword"],
 ] as const satisfies ReadonlyArray<
   readonly [string, Schemas["PayloadSchemaType"]]
 >;
@@ -24,6 +25,10 @@ export type QdrantSetupClient = Pick<
 >;
 
 export type QdrantUpsertClient = Pick<QdrantClient, "upsert">;
+export type QdrantReconciliationClient = Pick<
+  QdrantClient,
+  "scroll" | "delete"
+>;
 
 export interface CollectionSetupResult {
   created: boolean;
@@ -33,6 +38,11 @@ export interface CollectionSetupResult {
 export interface UpsertResult {
   pointsUpserted: number;
   batchesCompleted: number;
+}
+
+export interface ReconciliationResult {
+  stalePointsDeleted: number;
+  deleteBatchesCompleted: number;
 }
 
 export function createQdrantClient(config: QdrantConfig): QdrantClient {
@@ -109,6 +119,16 @@ export async function ensureCollection(
   const indexesCreated: string[] = [];
 
   for (const [fieldName, fieldSchema] of PAYLOAD_INDEXES) {
+    const existingIndex = collection.payload_schema[fieldName];
+
+    if (existingIndex && existingIndex.data_type !== fieldSchema) {
+      throw new Error(
+        `Qdrant payload index "${fieldName}" has type ${existingIndex.data_type}; expected ${fieldSchema}`,
+      );
+    }
+  }
+
+  for (const [fieldName, fieldSchema] of PAYLOAD_INDEXES) {
     if (collection.payload_schema[fieldName]) continue;
 
     await client.createPayloadIndex(collectionName, {
@@ -173,10 +193,9 @@ export async function upsertPreparedPoints(
         points: qdrantPoints,
       });
       batchesCompleted += 1;
-    } catch (error) {
+    } catch {
       throw new Error(
         `Qdrant upsert failed for batch ${batchesCompleted + 1} containing ${batch.length} points`,
-        { cause: error },
       );
     }
   }
@@ -184,5 +203,71 @@ export async function upsertPreparedPoints(
   return {
     pointsUpserted: points.length,
     batchesCompleted,
+  };
+}
+
+export async function reconcileDatasetPoints(
+  client: QdrantReconciliationClient,
+  collectionName: string,
+  datasetId: string,
+  desiredPointIds: ReadonlySet<string>,
+  batchSize = 256,
+): Promise<ReconciliationResult> {
+  if (!Number.isInteger(batchSize) || batchSize < 1) {
+    throw new Error("Qdrant reconciliation batch size must be a positive integer");
+  }
+
+  const existingIds: Schemas["ExtendedPointId"][] = [];
+  let offset: Schemas["ExtendedPointId"] | undefined;
+
+  do {
+    let page: Awaited<ReturnType<QdrantReconciliationClient["scroll"]>>;
+
+    try {
+      page = await client.scroll(collectionName, {
+        filter: {
+          must: [{ key: "datasetId", match: { value: datasetId } }],
+        },
+        limit: batchSize,
+        ...(offset !== undefined ? { offset } : {}),
+        with_payload: false,
+        with_vector: false,
+      });
+    } catch {
+      throw new Error("Qdrant synthetic dataset reconciliation scan failed");
+    }
+
+    existingIds.push(...page.points.map((point) => point.id));
+    offset =
+      typeof page.next_page_offset === "string" ||
+      typeof page.next_page_offset === "number"
+        ? page.next_page_offset
+        : undefined;
+  } while (offset !== undefined);
+
+  const staleIds = existingIds.filter(
+    (id) => typeof id !== "string" || !desiredPointIds.has(id),
+  );
+  let deleteBatchesCompleted = 0;
+
+  for (let start = 0; start < staleIds.length; start += batchSize) {
+    const batch = staleIds.slice(start, start + batchSize);
+
+    try {
+      await client.delete(collectionName, {
+        wait: true,
+        points: batch,
+      });
+      deleteBatchesCompleted += 1;
+    } catch {
+      throw new Error(
+        `Qdrant stale-point cleanup failed for batch ${deleteBatchesCompleted + 1} containing ${batch.length} points`,
+      );
+    }
+  }
+
+  return {
+    stalePointsDeleted: staleIds.length,
+    deleteBatchesCompleted,
   };
 }

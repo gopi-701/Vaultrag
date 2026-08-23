@@ -7,9 +7,17 @@ import {
   ensureCollection,
 } from "@/lib/retrieval/qdrant";
 
+export function loadSetupConfiguration(
+  environment: Record<string, string | undefined> = process.env,
+) {
+  return {
+    qdrant: getQdrantConfig(environment),
+    embedding: getEmbeddingModelConfig(environment),
+  };
+}
+
 async function main() {
-  const qdrant = getQdrantConfig();
-  const embedding = getEmbeddingModelConfig();
+  const { qdrant, embedding } = loadSetupConfiguration();
   const client = createQdrantClient(qdrant);
   const result = await ensureCollection(
     client,

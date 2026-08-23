@@ -13,8 +13,14 @@ import { BankingDocumentCollectionSchema } from "@/lib/schemas/bankingDocument";
 export interface PreparedPoint {
   id: string;
   vector: number[];
-  payload: DocumentChunk;
+  payload: PreparedPointPayload;
 }
+
+export interface PreparedPointPayload extends DocumentChunk {
+  datasetId: string;
+}
+
+export const SYNTHETIC_DATASET_ID = "vaultrag_synthetic_banking_v1";
 
 export function createEmbeddingInput(chunk: DocumentChunk): string {
   return `Title: ${chunk.documentTitle}\nType: ${chunk.docType}\nContent: ${chunk.text}`;
@@ -22,7 +28,7 @@ export function createEmbeddingInput(chunk: DocumentChunk): string {
 
 export function createPointId(chunk: DocumentChunk): string {
   const hash = createHash("sha256")
-    .update(`${chunk.documentId}:${chunk.chunkIndex}`)
+    .update(`${SYNTHETIC_DATASET_ID}:${chunk.documentId}:${chunk.chunkIndex}`)
     .digest("hex")
     .slice(0, 32);
 
@@ -46,6 +52,9 @@ export async function prepareDocuments(
   return chunks.map((chunk, index) => ({
     id: createPointId(chunk),
     vector: vectors[index],
-    payload: chunk,
+    payload: {
+      ...chunk,
+      datasetId: SYNTHETIC_DATASET_ID,
+    },
   }));
 }

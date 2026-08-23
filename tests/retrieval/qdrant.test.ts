@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import syntheticDocuments from "@/data/synthetic_docs.json";
 import { chunkDocument } from "@/lib/retrieval/chunker";
-import type { PreparedPoint } from "@/lib/retrieval/preparation";
+import {
+  SYNTHETIC_DATASET_ID,
+  type PreparedPoint,
+} from "@/lib/retrieval/preparation";
 import {
   ensureCollection,
   upsertPreparedPoints,
@@ -38,7 +41,11 @@ function point(index: number, vector = [index, 0.5, 1]): PreparedPoint {
   return {
     id: `00000000-0000-5000-a000-${String(index).padStart(12, "0")}`,
     vector,
-    payload: { ...payload, allowedRoles: [...payload.allowedRoles] },
+    payload: {
+      ...payload,
+      allowedRoles: [...payload.allowedRoles],
+      datasetId: SYNTHETIC_DATASET_ID,
+    },
   };
 }
 
@@ -65,6 +72,7 @@ describe("Qdrant collection setup", () => {
       "dealId",
       "classification",
       "documentId",
+      "datasetId",
     ]);
   });
 
@@ -80,6 +88,103 @@ describe("Qdrant collection setup", () => {
 
     expect(result.created).toBe(false);
     expect(client.createCollection).not.toHaveBeenCalled();
+  });
+
+  it("accepts compatible existing payload indexes", async () => {
+    const payloadSchema = {
+      allowedRoles: { data_type: "keyword", points: 1 },
+      minimumClearance: { data_type: "integer", points: 1 },
+      branchId: { data_type: "keyword", points: 1 },
+      clientId: { data_type: "keyword", points: 1 },
+      dealId: { data_type: "keyword", points: 1 },
+      classification: { data_type: "keyword", points: 1 },
+      documentId: { data_type: "keyword", points: 1 },
+      datasetId: { data_type: "keyword", points: 1 },
+    } as Schemas["CollectionInfo"]["payload_schema"];
+    const client = {
+      collectionExists: vi.fn().mockResolvedValue({ exists: true }),
+      createCollection: vi.fn(),
+      getCollection: vi.fn().mockResolvedValue(collectionInfo(3, "Cosine", payloadSchema)),
+      createPayloadIndex: vi.fn(),
+    } as unknown as QdrantSetupClient;
+
+    const result = await ensureCollection(client, "vaultrag_docs", 3);
+
+    expect(result.indexesCreated).toEqual([]);
+    expect(client.createPayloadIndex).not.toHaveBeenCalled();
+  });
+
+  it("fails on an incompatible clearance index without changing indexes", async () => {
+    const client = {
+      collectionExists: vi.fn().mockResolvedValue({ exists: true }),
+      createCollection: vi.fn(),
+      getCollection: vi.fn().mockResolvedValue(
+        collectionInfo(3, "Cosine", {
+          minimumClearance: { data_type: "keyword", points: 1 },
+        }),
+      ),
+      createPayloadIndex: vi.fn(),
+    } as unknown as QdrantSetupClient;
+
+    await expect(ensureCollection(client, "vaultrag_docs", 3)).rejects.toThrow(
+      /minimumClearance.*keyword.*integer/,
+    );
+    expect(client.createPayloadIndex).not.toHaveBeenCalled();
+    expect(client.createCollection).not.toHaveBeenCalled();
+  });
+
+  it("fails on an incompatible keyword index", async () => {
+    const client = {
+      collectionExists: vi.fn().mockResolvedValue({ exists: true }),
+      createCollection: vi.fn(),
+      getCollection: vi.fn().mockResolvedValue(
+        collectionInfo(3, "Cosine", {
+          branchId: { data_type: "integer", points: 1 },
+        }),
+      ),
+      createPayloadIndex: vi.fn(),
+    } as unknown as QdrantSetupClient;
+
+    await expect(ensureCollection(client, "vaultrag_docs", 3)).rejects.toThrow(
+      /branchId.*integer.*keyword/,
+    );
+  });
+
+  it("creates only indexes missing from a partial compatible schema", async () => {
+    const client = {
+      collectionExists: vi.fn().mockResolvedValue({ exists: true }),
+      createCollection: vi.fn(),
+      getCollection: vi.fn().mockResolvedValue(
+        collectionInfo(3, "Cosine", {
+          allowedRoles: { data_type: "keyword", points: 1 },
+          minimumClearance: { data_type: "integer", points: 1 },
+        }),
+      ),
+      createPayloadIndex: vi.fn().mockResolvedValue({ status: "completed" }),
+    } as unknown as QdrantSetupClient;
+
+    const result = await ensureCollection(client, "vaultrag_docs", 3);
+
+    expect(result.indexesCreated).not.toContain("allowedRoles");
+    expect(result.indexesCreated).not.toContain("minimumClearance");
+    expect(result.indexesCreated).toContain("datasetId");
+    expect(client.createPayloadIndex).toHaveBeenCalledTimes(6);
+  });
+
+  it("rejects incompatible vector dimension and distance", async () => {
+    const dimensionClient = {
+      collectionExists: vi.fn().mockResolvedValue({ exists: true }),
+      createCollection: vi.fn(),
+      getCollection: vi.fn().mockResolvedValue(collectionInfo(4)),
+      createPayloadIndex: vi.fn(),
+    } as unknown as QdrantSetupClient;
+    const distanceClient = {
+      ...dimensionClient,
+      getCollection: vi.fn().mockResolvedValue(collectionInfo(3, "Dot")),
+    } as unknown as QdrantSetupClient;
+
+    await expect(ensureCollection(dimensionClient, "vaultrag_docs", 3)).rejects.toThrow(/dimension/i);
+    await expect(ensureCollection(distanceClient, "vaultrag_docs", 3)).rejects.toThrow(/distance/i);
   });
 });
 
@@ -107,7 +212,10 @@ describe("Qdrant point upserts", () => {
         payload: { ...point.payload },
       })),
     });
-    expect(points[0].payload).toEqual(payload);
+    expect(points[0].payload).toEqual({
+      ...payload,
+      datasetId: SYNTHETIC_DATASET_ID,
+    });
   });
 
   it("rejects invalid vector dimensions before any upsert", async () => {
@@ -131,5 +239,16 @@ describe("Qdrant point upserts", () => {
       ),
     ).rejects.toThrow(/finite values/i);
     expect(client.upsert).not.toHaveBeenCalled();
+  });
+
+  it("does not expose credentials from a failed batch", async () => {
+    const secret = "jina-secret-never-log";
+    const client = {
+      upsert: vi.fn().mockRejectedValue(new Error(`request used ${secret}`)),
+    } as unknown as QdrantUpsertClient;
+
+    const operation = upsertPreparedPoints(client, "vaultrag_docs", [point(1)], 3);
+    await expect(operation).rejects.toThrow(/batch 1/);
+    await expect(operation).rejects.not.toThrow(secret);
   });
 });

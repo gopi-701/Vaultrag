@@ -22,6 +22,9 @@ async function main() {
   console.log(
     `Upserted ${result.pointsUpserted} chunks into "${qdrant.collection}" in ${result.batchesCompleted} batch(es).`,
   );
+  console.log(
+    `Removed ${result.stalePointsDeleted} stale synthetic dataset point(s).`,
+  );
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
