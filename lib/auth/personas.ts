@@ -67,7 +67,11 @@ const PERSONAS = {
   },
 } as const satisfies Record<PersonaId, SafePersonaMetadata>;
 
-export function getPersona(personaId: PersonaId): SafePersonaMetadata {
+export type GuestPrincipal = typeof PERSONAS.guest;
+
+export function getPersona<TPersonaId extends PersonaId>(
+  personaId: TPersonaId,
+): (typeof PERSONAS)[TPersonaId] {
   return PERSONAS[personaId];
 }
 

@@ -41,4 +41,8 @@ export type Role = z.infer<typeof RoleSchema>;
 export type ClearanceLevel = z.infer<typeof ClearanceLevelSchema>;
 export type PersonaId = z.infer<typeof PersonaIdSchema>;
 export type UserClaims = z.infer<typeof UserClaimsSchema>;
+declare const verifiedUserClaimsBrand: unique symbol;
+export type VerifiedUserClaims = UserClaims & {
+  readonly [verifiedUserClaimsBrand]: true;
+};
 export type UnsignedUserClaims = Omit<UserClaims, "iat" | "exp">;

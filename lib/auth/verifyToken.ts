@@ -2,7 +2,10 @@ import "server-only";
 
 import jwt from "jsonwebtoken";
 
-import { UserClaimsSchema, type UserClaims } from "./claims";
+import {
+  UserClaimsSchema,
+  type VerifiedUserClaims,
+} from "./claims";
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -14,7 +17,7 @@ function getJwtSecret(): string {
   return secret;
 }
 
-export function verifyToken(token: string): UserClaims {
+export function verifyToken(token: string): VerifiedUserClaims {
   const decoded = jwt.verify(token, getJwtSecret(), {
     algorithms: ["HS256"],
   });
@@ -24,5 +27,8 @@ export function verifyToken(token: string): UserClaims {
     throw new jwt.TokenExpiredError("jwt expired", new Date(claims.exp * 1000));
   }
 
-  return claims;
+  // The private brand has no runtime representation. This assertion remains
+  // inside the authentication module and follows signature, algorithm, schema,
+  // and expiration verification above.
+  return claims as VerifiedUserClaims;
 }

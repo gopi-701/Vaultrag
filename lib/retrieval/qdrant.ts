@@ -25,6 +25,7 @@ export type QdrantSetupClient = Pick<
 >;
 
 export type QdrantUpsertClient = Pick<QdrantClient, "upsert">;
+export type QdrantQueryClient = Pick<QdrantClient, "query">;
 export type QdrantReconciliationClient = Pick<
   QdrantClient,
   "scroll" | "delete"
@@ -45,11 +46,37 @@ export interface ReconciliationResult {
   deleteBatchesCompleted: number;
 }
 
+export interface AuthorizedPointQuery {
+  vector: readonly number[];
+  filter: Schemas["Filter"];
+  limit: number;
+}
+
 export function createQdrantClient(config: QdrantConfig): QdrantClient {
   return new QdrantClient({
     url: config.url,
     ...(config.apiKey ? { apiKey: config.apiKey } : {}),
   });
+}
+
+export async function queryAuthorizedPoints(
+  client: QdrantQueryClient,
+  collectionName: string,
+  request: AuthorizedPointQuery,
+): Promise<Schemas["ScoredPoint"][]> {
+  try {
+    const response = await client.query(collectionName, {
+      query: [...request.vector],
+      filter: request.filter,
+      limit: request.limit,
+      with_payload: true,
+      with_vector: false,
+    });
+
+    return response.points;
+  } catch {
+    throw new Error("Authorized Qdrant query failed");
+  }
 }
 
 function getUnnamedVectorConfig(
