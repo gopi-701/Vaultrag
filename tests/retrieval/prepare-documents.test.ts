@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import syntheticDocuments from "@/data/synthetic_docs.json";
 import type { EmbeddingService } from "@/lib/retrieval/embeddings";
-import { BankingDocumentCollectionSchema } from "@/lib/schemas/bankingDocument";
 import {
   createEmbeddingInput,
   prepareDocuments,
-} from "@/scripts/prepare-documents";
+} from "@/lib/retrieval/preparation";
+import { BankingDocumentCollectionSchema } from "@/lib/schemas/bankingDocument";
 
 const documents = BankingDocumentCollectionSchema.parse(syntheticDocuments);
 
@@ -23,6 +23,19 @@ describe("prepared document pipeline", () => {
     expect(new Set(points.map((point) => point.id)).size).toBe(points.length);
     expect(points.every((point) => point.vector.length === 3)).toBe(true);
     expect(embeddingService.embedTexts).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps the same chunks to stable IDs across repeated preparation", async () => {
+    const embeddingService: EmbeddingService = {
+      embedTexts: async (texts) => texts.map(() => [1, 2, 3]),
+    };
+
+    const first = await prepareDocuments(documents, embeddingService);
+    const second = await prepareDocuments(documents, embeddingService);
+
+    expect(first.map((point) => point.id)).toEqual(
+      second.map((point) => point.id),
+    );
   });
 
   it("builds embedding input from semantic content, not authorization fields", () => {
