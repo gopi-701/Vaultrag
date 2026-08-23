@@ -3,7 +3,10 @@ import { pathToFileURL } from "node:url";
 import syntheticDocuments from "@/data/synthetic_docs.json";
 import { getEmbeddingConfig } from "@/lib/env/embeddings";
 import { getQdrantConfig } from "@/lib/env/qdrant";
-import { embedTexts } from "@/lib/retrieval/embeddings";
+import {
+  embedDocuments,
+  embedQueries,
+} from "@/lib/retrieval/embeddings";
 import { ingestDocuments } from "@/lib/retrieval/ingestion";
 import { createQdrantClient } from "@/lib/retrieval/qdrant";
 
@@ -15,7 +18,7 @@ async function main() {
     client,
     collectionName: qdrant.collection,
     vectorDimension: embedding.dimension,
-    embeddingService: { embedTexts },
+    embeddingService: { embedDocuments, embedQueries },
     upsertBatchSize: 64,
   });
 

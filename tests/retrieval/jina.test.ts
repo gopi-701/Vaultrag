@@ -26,7 +26,7 @@ describe("Jina embedding transport", () => {
     );
     const transport = createJinaTransport(config, fetchMock);
 
-    await expect(transport.embedBatch(["first", "second"])).resolves.toEqual([
+    await expect(transport.embedDocumentBatch(["first", "second"])).resolves.toEqual([
       [1, 2, 3],
       [4, 5, 6],
     ]);
@@ -45,12 +45,27 @@ describe("Jina embedding transport", () => {
     });
   });
 
+  it("maps query embeddings to the Jina retrieval query task", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({ data: [{ index: 0, embedding: [1, 2, 3] }] }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    const transport = createJinaTransport(config, fetchMock);
+
+    await transport.embedQueryBatch(["find Apollo retention sensitivity"]);
+
+    const [, request] = fetchMock.mock.calls[0];
+    expect(JSON.parse(String(request?.body)).task).toBe("retrieval.query");
+  });
+
   it("rejects malformed Jina response envelopes", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({ embeddings: [] }), { status: 200 }),
     );
     const transport = createJinaTransport(config, fetchMock);
 
-    await expect(transport.embedBatch(["input"])).rejects.toThrow();
+    await expect(transport.embedDocumentBatch(["input"])).rejects.toThrow();
   });
 });

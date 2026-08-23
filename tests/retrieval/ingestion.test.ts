@@ -18,7 +18,12 @@ const collectionInfo = {
 type IngestionClient = Pick<QdrantClient, "getCollection" | "upsert" | "scroll" | "delete">;
 
 function embeddingService(): EmbeddingService {
-  return { embedTexts: vi.fn(async (texts: string[]) => texts.map((text, index) => [text.length, index, 1])) };
+  return {
+    embedDocuments: vi.fn(async (texts: readonly string[]) =>
+      texts.map((text, index) => [text.length, index, 1]),
+    ),
+    embedQueries: vi.fn(),
+  };
 }
 
 function inMemoryClient(initial: Schemas["PointStruct"][] = []) {
@@ -49,12 +54,16 @@ function options(client: IngestionClient, service = embeddingService()) {
 describe("document ingestion", () => {
   it("rejects invalid source documents before Qdrant access or embedding", async () => {
     const { client } = inMemoryClient();
-    const service: EmbeddingService = { embedTexts: vi.fn() };
+    const service: EmbeddingService = {
+      embedDocuments: vi.fn(),
+      embedQueries: vi.fn(),
+    };
     await expect(ingestDocuments([{ id: "malformed" }], options(client, service))).rejects.toThrow();
     expect(client.getCollection).not.toHaveBeenCalled();
     expect(client.upsert).not.toHaveBeenCalled();
     expect(client.delete).not.toHaveBeenCalled();
-    expect(service.embedTexts).not.toHaveBeenCalled();
+    expect(service.embedDocuments).not.toHaveBeenCalled();
+    expect(service.embedQueries).not.toHaveBeenCalled();
   });
 
   it("is idempotent when the identical dataset is ingested twice", async () => {
@@ -115,7 +124,10 @@ describe("document ingestion", () => {
     const { client, points } = inMemoryClient();
     await ingestDocuments(documents.slice(0, 2), options(client));
     const idsBefore = [...points.keys()].sort();
-    const failedService: EmbeddingService = { embedTexts: vi.fn().mockRejectedValue(new Error("preparation failed")) };
+    const failedService: EmbeddingService = {
+      embedDocuments: vi.fn().mockRejectedValue(new Error("preparation failed")),
+      embedQueries: vi.fn(),
+    };
     await expect(ingestDocuments(documents.slice(0, 1), options(client, failedService))).rejects.toThrow(/preparation failed/);
     expect([...points.keys()].sort()).toEqual(idsBefore);
     expect(client.delete).not.toHaveBeenCalled();

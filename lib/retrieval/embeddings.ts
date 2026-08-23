@@ -11,11 +11,13 @@ const EmbeddingVectorsSchema = z.array(
 );
 
 export interface EmbeddingTransport {
-  embedBatch(texts: readonly string[]): Promise<unknown>;
+  embedDocumentBatch(texts: readonly string[]): Promise<unknown>;
+  embedQueryBatch(texts: readonly string[]): Promise<unknown>;
 }
 
 export interface EmbeddingService {
-  embedTexts(texts: readonly string[]): Promise<number[][]>;
+  embedDocuments(texts: readonly string[]): Promise<number[][]>;
+  embedQueries(texts: readonly string[]): Promise<number[][]>;
 }
 
 export type EmbeddingServiceConfig = Pick<
@@ -79,30 +81,49 @@ export function createEmbeddingService(
     throw new Error("Embedding dimension must be a positive integer");
   }
 
+  async function embed(
+    texts: readonly string[],
+    embedBatch: (batch: readonly string[]) => Promise<unknown>,
+  ): Promise<number[][]> {
+    validateInputs(texts);
+    if (texts.length === 0) return [];
+
+    const vectors: number[][] = [];
+
+    for (let offset = 0; offset < texts.length; offset += config.batchSize) {
+      const batch = texts.slice(offset, offset + config.batchSize);
+      const response = await embedBatch(batch);
+      vectors.push(
+        ...validateResponse(response, batch.length, config.dimension),
+      );
+    }
+
+    return vectors;
+  }
+
   return {
-    async embedTexts(texts) {
-      validateInputs(texts);
-      if (texts.length === 0) return [];
-
-      const vectors: number[][] = [];
-
-      for (let offset = 0; offset < texts.length; offset += config.batchSize) {
-        const batch = texts.slice(offset, offset + config.batchSize);
-        const response = await transport.embedBatch(batch);
-        vectors.push(
-          ...validateResponse(response, batch.length, config.dimension),
-        );
-      }
-
-      return vectors;
+    embedDocuments(texts) {
+      return embed(texts, (batch) => transport.embedDocumentBatch(batch));
+    },
+    embedQueries(texts) {
+      return embed(texts, (batch) => transport.embedQueryBatch(batch));
     },
   };
 }
 
-export async function embedTexts(
+function createConfiguredEmbeddingService(): EmbeddingService {
+  const config = getEmbeddingConfig();
+  return createEmbeddingService(config, createJinaTransport(config));
+}
+
+export async function embedDocuments(
   texts: readonly string[],
 ): Promise<number[][]> {
-  const config = getEmbeddingConfig();
-  const service = createEmbeddingService(config, createJinaTransport(config));
-  return service.embedTexts(texts);
+  return createConfiguredEmbeddingService().embedDocuments(texts);
+}
+
+export async function embedQueries(
+  texts: readonly string[],
+): Promise<number[][]> {
+  return createConfiguredEmbeddingService().embedQueries(texts);
 }

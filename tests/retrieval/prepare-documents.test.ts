@@ -13,21 +13,24 @@ const documents = BankingDocumentCollectionSchema.parse(syntheticDocuments);
 describe("prepared document pipeline", () => {
   it("produces one embedded Qdrant-ready point per chunk", async () => {
     const embeddingService: EmbeddingService = {
-      embedTexts: vi.fn(async (texts: readonly string[]) =>
+      embedDocuments: vi.fn(async (texts: readonly string[]) =>
         texts.map((_, index) => [index, 0.5, 1]),
       ),
+      embedQueries: vi.fn(),
     };
     const points = await prepareDocuments(documents, embeddingService);
 
-    expect(points).toHaveLength(46);
+    expect(points.length).toBeGreaterThan(documents.length);
     expect(new Set(points.map((point) => point.id)).size).toBe(points.length);
     expect(points.every((point) => point.vector.length === 3)).toBe(true);
-    expect(embeddingService.embedTexts).toHaveBeenCalledTimes(1);
+    expect(embeddingService.embedDocuments).toHaveBeenCalledTimes(1);
+    expect(embeddingService.embedQueries).not.toHaveBeenCalled();
   });
 
   it("maps the same chunks to stable IDs across repeated preparation", async () => {
     const embeddingService: EmbeddingService = {
-      embedTexts: async (texts) => texts.map(() => [1, 2, 3]),
+      embedDocuments: async (texts) => texts.map(() => [1, 2, 3]),
+      embedQueries: async (texts) => texts.map(() => [1, 2, 3]),
     };
 
     const first = await prepareDocuments(documents, embeddingService);

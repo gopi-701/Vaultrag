@@ -18,8 +18,10 @@ export function createJinaTransport(
   config: EmbeddingConfig,
   fetchImplementation: typeof fetch = fetch,
 ): EmbeddingTransport {
-  return {
-    async embedBatch(texts) {
+  async function embedBatch(
+    texts: readonly string[],
+    task: "retrieval.passage" | "retrieval.query",
+  ): Promise<number[][]> {
       const response = await fetchImplementation(JINA_EMBEDDINGS_URL, {
         method: "POST",
         headers: {
@@ -29,7 +31,7 @@ export function createJinaTransport(
         body: JSON.stringify({
           model: config.model,
           input: [...texts],
-          task: "retrieval.passage",
+          task,
           dimensions: config.dimension,
         }),
       });
@@ -46,6 +48,14 @@ export function createJinaTransport(
       }
 
       return ordered.map((item) => item.embedding);
+  }
+
+  return {
+    embedDocumentBatch(texts) {
+      return embedBatch(texts, "retrieval.passage");
+    },
+    embedQueryBatch(texts) {
+      return embedBatch(texts, "retrieval.query");
     },
   };
 }

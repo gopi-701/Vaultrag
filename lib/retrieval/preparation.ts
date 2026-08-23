@@ -5,7 +5,8 @@ import {
   type DocumentChunk,
 } from "@/lib/retrieval/chunker";
 import {
-  embedTexts,
+  embedDocuments,
+  embedQueries,
   type EmbeddingService,
 } from "@/lib/retrieval/embeddings";
 import { BankingDocumentCollectionSchema } from "@/lib/schemas/bankingDocument";
@@ -37,11 +38,11 @@ export function createPointId(chunk: DocumentChunk): string {
 
 export async function prepareDocuments(
   input: unknown,
-  embeddingService: EmbeddingService = { embedTexts },
+  embeddingService: EmbeddingService = { embedDocuments, embedQueries },
 ): Promise<PreparedPoint[]> {
   const documents = BankingDocumentCollectionSchema.parse(input);
   const chunks = chunkDocuments(documents);
-  const vectors = await embeddingService.embedTexts(
+  const vectors = await embeddingService.embedDocuments(
     chunks.map(createEmbeddingInput),
   );
 
