@@ -42,6 +42,38 @@ const SearchPayloadSchema = z.object({
   text: z.string().trim().min(1),
 });
 
+export const AuthorizedSearchResultSchema = z
+  .object({
+    chunkId: z.string().min(1),
+    documentId: z.string().min(1),
+    documentTitle: z.string().min(1),
+    text: z.string().trim().min(1),
+    classification: DocumentClassificationSchema,
+    similarityScore: z.number().finite(),
+    chunkIndex: z.number().int().nonnegative(),
+    metadata: z
+      .object({
+        docType: z.string().min(1),
+        allowedRoles: z.array(RoleSchema),
+        minimumClearance: ClearanceLevelSchema,
+        branchId: z.string().min(1).nullable(),
+        clientId: z.string().min(1).nullable(),
+        dealId: z.string().min(1).nullable(),
+        datasetId: z.literal(SYNTHETIC_DATASET_ID),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type AuthorizedSearchResultData = z.infer<
+  typeof AuthorizedSearchResultSchema
+>;
+
+declare const authorizedSearchResultBrand: unique symbol;
+export type AuthorizedSearchResult = AuthorizedSearchResultData & {
+  readonly [authorizedSearchResultBrand]: true;
+};
+
 export type RetrievalPrincipal = VerifiedUserClaims | GuestPrincipal;
 
 export interface AuthorizedSearchInput {
@@ -67,17 +99,6 @@ export type AuthorizedSearchMetadata = Pick<
   | "dealId"
   | "datasetId"
 >;
-
-export interface AuthorizedSearchResult {
-  chunkId: string;
-  documentId: string;
-  documentTitle: string;
-  text: string;
-  classification: PreparedPointPayload["classification"];
-  similarityScore: number;
-  chunkIndex: number;
-  metadata: AuthorizedSearchMetadata;
-}
 
 export interface AuthorizedSearchResponse {
   results: AuthorizedSearchResult[];
@@ -121,7 +142,7 @@ function validatePrincipal(user: RetrievalPrincipal): RetrievalPrincipal {
 function normalizePoint(point: Schemas["ScoredPoint"]): AuthorizedSearchResult {
   const payload = SearchPayloadSchema.parse(point.payload);
 
-  return {
+  const normalized: AuthorizedSearchResultData = {
     chunkId: String(point.id),
     documentId: payload.documentId,
     documentTitle: payload.documentTitle,
@@ -139,6 +160,11 @@ function normalizePoint(point: Schemas["ScoredPoint"]): AuthorizedSearchResult {
       datasetId: payload.datasetId,
     },
   };
+
+  // This is the sole authorization-result branding point. Qdrant has already
+  // applied the compiled authorization filter before returning this point, and
+  // SearchPayloadSchema has strictly validated its payload above.
+  return normalized as AuthorizedSearchResult;
 }
 
 export async function searchAuthorizedDocuments(
