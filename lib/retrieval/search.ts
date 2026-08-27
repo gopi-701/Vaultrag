@@ -103,6 +103,7 @@ export type AuthorizedSearchMetadata = Pick<
 export interface AuthorizedSearchResponse {
   results: AuthorizedSearchResult[];
   debug: {
+    authorizationPrefilterApplied: true;
     filter: Schemas["Filter"];
     topK: number;
     retrievalLatencyMs: number;
@@ -209,6 +210,11 @@ export async function searchAuthorizedDocuments(
 
   return {
     results: points.map(normalizePoint),
-    debug: { filter, topK, retrievalLatencyMs },
+    debug: {
+      authorizationPrefilterApplied: true,
+      filter,
+      topK,
+      retrievalLatencyMs,
+    },
   };
 }

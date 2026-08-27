@@ -192,6 +192,7 @@ describe("authorized retrieval", () => {
     expect(request.with_payload).toBe(true);
     expect(request.with_vector).toBe(false);
     expect(response.debug).toEqual({
+      authorizationPrefilterApplied: true,
       filter: request.filter,
       topK: 20,
       retrievalLatencyMs: 7.5,

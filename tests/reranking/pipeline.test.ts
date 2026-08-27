@@ -102,6 +102,13 @@ describe("secure retrieval and reranking orchestration", () => {
       },
     });
     expect(response.candidateCount).toBe(3);
+    expect(response.retrievalDebug.authorizationPrefilterApplied).toBe(true);
+    expect(response.retrievalDebug).toEqual({
+      authorizationPrefilterApplied: true,
+      filter: vi.mocked(client.query).mock.calls[0][1].filter,
+      topK: DEFAULT_RERANK_CANDIDATE_LIMIT,
+      retrievalLatencyMs: 4,
+    });
   });
 
   it("skips reranking when secure retrieval returns no candidates", async () => {
@@ -117,6 +124,7 @@ describe("secure retrieval and reranking orchestration", () => {
 
     expect(response.results).toEqual([]);
     expect(response.candidateCount).toBe(0);
+    expect(response.retrievalDebug.authorizationPrefilterApplied).toBe(true);
     expect(reranker.rerank).not.toHaveBeenCalled();
   });
 });
