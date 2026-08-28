@@ -1,9 +1,13 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { createChatRequest } from "@/components/chat/request";
+import {
+  ChatRequestCoordinator,
+  executeChatRequest,
+} from "@/components/chat/request-coordinator";
 import { ChatResponseSchema, type ChatResponse } from "@/components/chat/types";
 import {
   GUEST_SESSION,
@@ -22,12 +26,6 @@ async function readJson(response: Response): Promise<unknown> {
   return response.json().catch(() => null);
 }
 
-export function chatFailureMessage(status: number) {
-  return status === 401
-    ? "Your employee session expired. Select the persona again or continue as Guest."
-    : "VaultRAG could not complete the request. Please try again.";
-}
-
 export function VaultRagWorkspace() {
   const [session, setSession] = useState<PersonaSession>(GUEST_SESSION);
   const [pendingPersonaId, setPendingPersonaId] = useState<PersonaId | null>(null);
@@ -37,6 +35,13 @@ export function VaultRagWorkspace() {
   const [loading, setLoading] = useState(false);
   const personaRequestSequence = useRef(0);
   const submissionInFlight = useRef(false);
+  const [chatCoordinator] = useState(() => new ChatRequestCoordinator());
+
+  useEffect(() => () => {
+    personaRequestSequence.current += 1;
+    chatCoordinator.invalidate();
+    submissionInFlight.current = false;
+  }, [chatCoordinator]);
 
   function clearConversation() {
     setResponse(null);
@@ -46,6 +51,9 @@ export function VaultRagWorkspace() {
 
   async function selectPersona(personaId: PersonaId) {
     const sequence = ++personaRequestSequence.current;
+    chatCoordinator.invalidate();
+    submissionInFlight.current = false;
+    setLoading(false);
     clearConversation();
     setSession(GUEST_SESSION);
 
@@ -76,32 +84,26 @@ export function VaultRagWorkspace() {
     const trimmedQuery = query.trim();
     if (!trimmedQuery || loading || pendingPersonaId || submissionInFlight.current) return;
 
-    submissionInFlight.current = true;
-    setLoading(true);
-    setError(null);
-    setResponse(null);
-    try {
-      const chatRequest = createChatRequest(trimmedQuery, session);
-      const chatResponse = await fetch(chatRequest.url, chatRequest.init);
-      const payload = await readJson(chatResponse);
-
-      if (chatResponse.status === 401) {
-        setSession(GUEST_SESSION);
-        throw new Error(chatFailureMessage(chatResponse.status));
-      }
-      if (!chatResponse.ok) throw new Error(chatFailureMessage(chatResponse.status));
-      setResponse(ChatResponseSchema.parse(payload));
-    } catch (caught) {
-      setError(
-        caught instanceof Error && (
-          caught.message === chatFailureMessage(401) ||
-          caught.message === chatFailureMessage(500)
-        ) ? caught.message : chatFailureMessage(500),
-      );
-    } finally {
-      submissionInFlight.current = false;
-      setLoading(false);
-    }
+    const chatRequest = createChatRequest(trimmedQuery, session);
+    await executeChatRequest({
+      coordinator: chatCoordinator,
+      url: chatRequest.url,
+      init: chatRequest.init,
+      parse: (payload) => ChatResponseSchema.parse(payload),
+      onStarted: () => {
+        submissionInFlight.current = true;
+        setLoading(true);
+        setError(null);
+        setResponse(null);
+      },
+      onSuccess: setResponse,
+      onUnauthorized: () => setSession(GUEST_SESSION),
+      onError: setError,
+      onFinished: () => {
+        submissionInFlight.current = false;
+        setLoading(false);
+      },
+    });
   }
 
   return (

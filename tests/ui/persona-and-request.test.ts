@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { createChatRequest } from "@/components/chat/request";
+import { chatFailureMessage } from "@/components/chat/request-coordinator";
 import {
   GUEST_SESSION,
   createPersonaRequest,
   resolveEmployeeSession,
 } from "@/components/persona-switcher/session";
-import { chatFailureMessage } from "@/components/vault-rag-workspace";
 
 function personaResponse(personaId: "retail_banker" | "wealth_manager", token: string) {
   return {
