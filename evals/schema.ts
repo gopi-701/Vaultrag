@@ -28,9 +28,8 @@ export const EvaluationCaseSchema = z
     query: z.string().trim().min(3).max(2_000),
     persona: PersonaIdSchema,
     expectedRelevantDocumentIds: UniqueStringArraySchema,
-    expectedRelevantChunkIds: UniqueStringArraySchema.default([]),
     expectedForbiddenDocumentIds: UniqueStringArraySchema,
-    answerable: z.boolean(),
+    expectedOutcome: z.enum(["answer", "no_authorized_context"]),
     category: EvalCategorySchema,
     notes: z.string().trim().min(1),
     adversarialInput: z
@@ -42,8 +41,10 @@ export const EvaluationCaseSchema = z
   })
   .strict()
   .superRefine((value, context) => {
-    if (value.answerable && value.expectedRelevantDocumentIds.length === 0 &&
-      value.expectedRelevantChunkIds.length === 0) {
+    if (
+      value.expectedOutcome === "answer" &&
+      value.expectedRelevantDocumentIds.length === 0
+    ) {
       context.addIssue({
         code: "custom",
         path: ["expectedRelevantDocumentIds"],

@@ -2,15 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import evaluationCases from "@/evals/cases.json";
 import {
-  answerabilityCorrect,
   authorizationViolationRate,
+  calculateAuthorizationSecurityMetrics,
+  calculateDocumentRankingMetrics,
   calculateRankingMetrics,
+  contextAvailabilityCorrect,
+  deduplicateRankedDocumentIds,
   forbiddenDocumentRetrievalRate,
   hitRateAtK,
+  noContextBehaviorCorrect,
   precisionAtK,
   recallAtK,
   reciprocalRank,
-  refusalCorrect,
 } from "@/evals/metrics";
 import {
   EvaluationCaseSchema,
@@ -18,6 +21,24 @@ import {
   parseEvaluationSuite,
 } from "@/evals/schema";
 import syntheticDocuments from "@/data/synthetic_docs.json";
+import { getPersona } from "@/lib/auth/personas";
+import { evaluateDocumentAccess, type DocumentMetadata } from "@/lib/authorization";
+
+function publicDocument(overrides: Partial<DocumentMetadata> = {}): DocumentMetadata {
+  return {
+    documentId: "PUBLIC-IRRELEVANT",
+    documentTitle: "Unrelated public record",
+    docType: "PUBLIC_FAQ",
+    allowedRoles: [],
+    minimumClearance: 0,
+    branchId: null,
+    clientId: null,
+    dealId: null,
+    classification: "PUBLIC",
+    chunkIndex: 0,
+    ...overrides,
+  };
+}
 
 describe("evaluation ranking metrics", () => {
   const ranked = ["DOC-X", "DOC-B", "DOC-A", "DOC-Y", "DOC-C"];
@@ -46,6 +67,30 @@ describe("evaluation ranking metrics", () => {
     });
   });
 
+  it("deduplicates chunk results before document-level Precision@K", () => {
+    const metrics = calculateDocumentRankingMetrics(
+      ["DOC-A", "DOC-A", "DOC-X"],
+      ["DOC-A"],
+      2,
+    );
+
+    expect(deduplicateRankedDocumentIds(["DOC-A", "DOC-A", "DOC-X"])).toEqual([
+      "DOC-A",
+      "DOC-X",
+    ]);
+    expect(metrics.precisionAtK).toBe(0.5);
+  });
+
+  it("uses the first document occurrence when calculating document-level MRR", () => {
+    const metrics = calculateDocumentRankingMetrics(
+      ["DOC-X", "DOC-X", "DOC-A", "DOC-A"],
+      ["DOC-A"],
+      4,
+    );
+
+    expect(metrics.reciprocalRank).toBe(0.5);
+  });
+
   it("rejects malformed K values", () => {
     expect(() => recallAtK(ranked, relevant, 0)).toThrow("positive integer");
     expect(() => precisionAtK(ranked, relevant, 1.5)).toThrow("positive integer");
@@ -69,17 +114,90 @@ describe("evaluation security and answer metrics", () => {
     expect(() => forbiddenDocumentRetrievalRate(-1, 4)).toThrow("invalid");
   });
 
-  it("scores refusal correctness", () => {
-    expect(refusalCorrect(false, true)).toBe(true);
-    expect(refusalCorrect(false, false)).toBe(false);
-    expect(refusalCorrect(true, false)).toBe(true);
-    expect(refusalCorrect(true, true)).toBe(false);
+  it("counts unauthorized retrieval even when reranking removes it from context", () => {
+    const metrics = calculateAuthorizationSecurityMetrics({
+      retrieval: [
+        { chunkId: "unauthorized", documentId: "DOC-U", authorized: false },
+        { chunkId: "authorized", documentId: "DOC-A", authorized: true },
+      ],
+      finalContextChunkIds: ["authorized"],
+      expectedForbiddenDocumentIds: [],
+    });
+
+    expect(metrics.unauthorizedRetrievalChunkIds).toEqual(["unauthorized"]);
+    expect(metrics.unauthorizedContextChunkIds).toEqual([]);
+    expect(metrics.retrievalAuthorizationViolationRate).toBe(0.5);
+    expect(metrics.contextAuthorizationViolationRate).toBe(0);
   });
 
-  it("scores answerability from supplied authorized context", () => {
-    expect(answerabilityCorrect(true, 2)).toBe(true);
-    expect(answerabilityCorrect(false, 0)).toBe(true);
-    expect(answerabilityCorrect(false, 1)).toBe(false);
+  it("does not count an authorized but irrelevant result as a violation", () => {
+    const authorized = evaluateDocumentAccess(
+      getPersona("guest"),
+      publicDocument(),
+    ).allowed;
+    const metrics = calculateAuthorizationSecurityMetrics({
+      retrieval: [
+        { chunkId: "irrelevant", documentId: "DOC-IRRELEVANT", authorized },
+      ],
+      finalContextChunkIds: [],
+      expectedForbiddenDocumentIds: [],
+    });
+
+    expect(metrics.unauthorizedRetrievalChunkIds).toEqual([]);
+    expect(metrics.retrievalAuthorizationViolationRate).toBe(0);
+  });
+
+  it("detects policy violations independently of forbidden fixture IDs", () => {
+    const authorized = evaluateDocumentAccess(
+      getPersona("guest"),
+      publicDocument({
+        documentId: "DOC-NOT-LISTED",
+        allowedRoles: ["credit_analyst"],
+        minimumClearance: 2,
+        classification: "CONFIDENTIAL",
+      }),
+    ).allowed;
+    const metrics = calculateAuthorizationSecurityMetrics({
+      retrieval: [
+        { chunkId: "policy-violation", documentId: "DOC-NOT-LISTED", authorized },
+      ],
+      finalContextChunkIds: [],
+      expectedForbiddenDocumentIds: [],
+    });
+
+    expect(metrics.unauthorizedRetrievalChunkIds).toEqual(["policy-violation"]);
+    expect(metrics.forbiddenRetrievalDocumentIds).toEqual([]);
+  });
+
+  it("rejects context IDs that did not originate in retrieval", () => {
+    expect(() => calculateAuthorizationSecurityMetrics({
+      retrieval: [],
+      finalContextChunkIds: ["invented-context"],
+      expectedForbiddenDocumentIds: [],
+    })).toThrow("was not a retrieval output");
+  });
+
+  it("keeps forbidden-document metrics separate from policy authorization", () => {
+    const metrics = calculateAuthorizationSecurityMetrics({
+      retrieval: [
+        { chunkId: "authorized-forbidden-fixture", documentId: "DOC-F", authorized: true },
+      ],
+      finalContextChunkIds: ["authorized-forbidden-fixture"],
+      expectedForbiddenDocumentIds: ["DOC-F"],
+    });
+
+    expect(metrics.forbiddenDocumentRetrievalRate).toBe(1);
+    expect(metrics.retrievalAuthorizationViolationRate).toBe(0);
+    expect(metrics.contextAuthorizationViolationRate).toBe(0);
+  });
+
+  it("scores explicit context availability and deterministic no-context behavior", () => {
+    expect(contextAvailabilityCorrect("answer", 2)).toBe(true);
+    expect(contextAvailabilityCorrect("no_authorized_context", 0)).toBe(true);
+    expect(contextAvailabilityCorrect("no_authorized_context", 1)).toBe(false);
+    expect(noContextBehaviorCorrect("no_authorized_context", true)).toBe(true);
+    expect(noContextBehaviorCorrect("no_authorized_context", false)).toBe(false);
+    expect(noContextBehaviorCorrect("answer", true)).toBeNull();
   });
 });
 
@@ -146,11 +264,11 @@ describe("evaluation dataset schema", () => {
     })).toThrow();
   });
 
-  it("requires relevant IDs for answerable cases but permits empty security cases", () => {
+  it("requires relevant IDs for answer cases but permits empty security cases", () => {
     expect(() => EvaluationCaseSchema.parse({
       ...evaluationCases[0],
       expectedRelevantDocumentIds: [],
-      answerable: true,
+      expectedOutcome: "answer",
     })).toThrow("require an expected relevant ID");
 
     expect(EvaluationCaseSchema.parse({
@@ -158,8 +276,15 @@ describe("evaluation dataset schema", () => {
       id: "security-only-case",
       expectedRelevantDocumentIds: [],
       expectedForbiddenDocumentIds: ["IB-APL-002"],
-      answerable: false,
+      expectedOutcome: "no_authorized_context",
     })).toBeDefined();
+  });
+
+  it("rejects the removed chunk relevance field instead of silently ignoring it", () => {
+    expect(() => EvaluationCaseSchema.parse({
+      ...evaluationCases[0],
+      expectedRelevantChunkIds: ["unused-chunk-id"],
+    })).toThrow();
   });
 
   it("rejects documents marked both relevant and forbidden", () => {

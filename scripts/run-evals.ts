@@ -3,12 +3,13 @@ import { pathToFileURL } from "node:url";
 
 import evaluationCases from "@/evals/cases.json";
 import {
-  answerabilityCorrect,
   authorizationViolationRate,
-  calculateRankingMetrics,
+  calculateAuthorizationSecurityMetrics,
+  calculateDocumentRankingMetrics,
+  contextAvailabilityCorrect,
   forbiddenDocumentRetrievalRate,
   mean,
-  refusalCorrect,
+  noContextBehaviorCorrect,
   type RankingMetrics,
 } from "@/evals/metrics";
 import {
@@ -61,7 +62,9 @@ interface CaseResult {
   category: EvalCategory;
   persona: EvaluationCase["persona"];
   query: string;
-  expectedAnswerable: boolean;
+  notes: string;
+  adversarialInput: EvaluationCase["adversarialInput"] | null;
+  expectedOutcome: EvaluationCase["expectedOutcome"];
   authorizationFilter: unknown;
   qdrant: RankedObservation[];
   reranked: RankedObservation[];
@@ -71,12 +74,14 @@ interface CaseResult {
   rerankedMetrics: RankingMetrics;
   rerankingMrrDelta: number | null;
   forbiddenQdrantDocumentIds: string[];
+  unauthorizedRetrievalChunkIds: string[];
   unauthorizedContextChunkIds: string[];
-  refused: boolean;
-  refusalCorrect: boolean;
-  answerabilityCorrect: boolean;
+  deterministicNoContextPath: boolean;
+  noContextBehaviorCorrect: boolean | null;
+  contextAvailabilityCorrect: boolean;
+  modelSemanticRefusalQuality: null;
   adversarialFixtureApplied: boolean;
-  outcome: "answered" | "refused";
+  outcome: "generated_answer" | "deterministic_no_context";
   latencyMs: {
     retrievalTotal: number;
     qdrant: number;
@@ -193,28 +198,28 @@ async function evaluateCase(evaluationCase: EvaluationCase): Promise<CaseResult>
   });
   const generationLatency = performance.now() - generationStarted;
 
-  const contextIds = new Set(generated.sources.map((source) => source.chunkId));
-  const finalContext = reranked.filter((result) => contextIds.has(result.chunkId));
-  const unauthorizedContext = finalContext.filter(
-    (result) => !documentAccess(principal, result).allowed,
-  );
-  const forbidden = new Set(evaluationCase.expectedForbiddenDocumentIds);
-  const forbiddenQdrantDocumentIds = retrieved.results
-    .map((result) => result.documentId)
-    .filter((id) => forbidden.has(id));
+  const security = calculateAuthorizationSecurityMetrics({
+    retrieval: retrieved.results.map((result) => ({
+      chunkId: result.chunkId,
+      documentId: result.documentId,
+      authorized: documentAccess(principal, result).allowed,
+    })),
+    finalContextChunkIds: generated.sources.map((source) => source.chunkId),
+    expectedForbiddenDocumentIds: evaluationCase.expectedForbiddenDocumentIds,
+  });
   const vectorIds = retrieved.results.map((result) => result.documentId);
   const rerankedIds = reranked.map((result) => result.documentId);
-  const vectorMetrics = calculateRankingMetrics(
+  const vectorMetrics = calculateDocumentRankingMetrics(
     vectorIds,
     evaluationCase.expectedRelevantDocumentIds,
     RAG_LIMITS.rerankedContextLimit,
   );
-  const rerankedMetrics = calculateRankingMetrics(
+  const rerankedMetrics = calculateDocumentRankingMetrics(
     rerankedIds,
     evaluationCase.expectedRelevantDocumentIds,
     RAG_LIMITS.rerankedContextLimit,
   );
-  const refused = generated.model === null &&
+  const deterministicNoContextPath = generated.model === null &&
     generated.sources.length === 0 &&
     generated.text === INSUFFICIENT_CONTEXT_RESPONSE;
 
@@ -223,7 +228,9 @@ async function evaluateCase(evaluationCase: EvaluationCase): Promise<CaseResult>
     category: evaluationCase.category,
     persona: evaluationCase.persona,
     query: evaluationCase.query,
-    expectedAnswerable: evaluationCase.answerable,
+    notes: evaluationCase.notes,
+    adversarialInput: evaluationCase.adversarialInput ?? null,
+    expectedOutcome: evaluationCase.expectedOutcome,
     authorizationFilter: retrieved.debug.filter,
     qdrant: retrieved.results.map((result) => ({
       chunkId: result.chunkId,
@@ -244,16 +251,23 @@ async function evaluateCase(evaluationCase: EvaluationCase): Promise<CaseResult>
       rerankedMetrics.reciprocalRank === null
         ? null
         : rerankedMetrics.reciprocalRank - vectorMetrics.reciprocalRank,
-    forbiddenQdrantDocumentIds,
-    unauthorizedContextChunkIds: unauthorizedContext.map((result) => result.chunkId),
-    refused,
-    refusalCorrect: refusalCorrect(evaluationCase.answerable, refused),
-    answerabilityCorrect: answerabilityCorrect(
-      evaluationCase.answerable,
+    forbiddenQdrantDocumentIds: security.forbiddenRetrievalDocumentIds,
+    unauthorizedRetrievalChunkIds: security.unauthorizedRetrievalChunkIds,
+    unauthorizedContextChunkIds: security.unauthorizedContextChunkIds,
+    deterministicNoContextPath,
+    noContextBehaviorCorrect: noContextBehaviorCorrect(
+      evaluationCase.expectedOutcome,
+      deterministicNoContextPath,
+    ),
+    contextAvailabilityCorrect: contextAvailabilityCorrect(
+      evaluationCase.expectedOutcome,
       generated.sources.length,
     ),
+    modelSemanticRefusalQuality: null,
     adversarialFixtureApplied: injected.applied,
-    outcome: refused ? "refused" : "answered",
+    outcome: deterministicNoContextPath
+      ? "deterministic_no_context"
+      : "generated_answer",
     latencyMs: {
       retrievalTotal,
       qdrant: retrieved.debug.retrievalLatencyMs,
@@ -277,6 +291,10 @@ function aggregate(results: CaseResult[]) {
     (sum, result) => sum + result.unauthorizedContextChunkIds.length,
     0,
   );
+  const retrievalViolations = results.reduce(
+    (sum, result) => sum + result.unauthorizedRetrievalChunkIds.length,
+    0,
+  );
 
   return {
     vector: {
@@ -293,20 +311,33 @@ function aggregate(results: CaseResult[]) {
       meanMrrDelta: mean(results.map((result) => result.rerankingMrrDelta)),
     },
     security: {
+      unauthorizedRetrievalChunks: retrievalViolations,
+      evaluatedRetrievalOutputs: qdrantOutputs,
+      retrievalAuthorizationViolationRate: authorizationViolationRate(
+        retrievalViolations,
+        qdrantOutputs,
+      ),
       unauthorizedContextChunks: violations,
       evaluatedContextOutputs: contextOutputs,
-      authorizationViolationRate: authorizationViolationRate(violations, contextOutputs),
+      contextAuthorizationViolationRate: authorizationViolationRate(
+        violations,
+        contextOutputs,
+      ),
       forbiddenRetrievals,
-      evaluatedRetrievalOutputs: qdrantOutputs,
       forbiddenDocumentRetrievalRate: forbiddenDocumentRetrievalRate(
         forbiddenRetrievals,
         qdrantOutputs,
       ),
     },
-    refusalCorrectness: mean(results.map((result) => Number(result.refusalCorrect))),
-    answerabilityCorrectness: mean(
-      results.map((result) => Number(result.answerabilityCorrect)),
+    noContextBehaviorCorrectness: mean(
+      results.map((result) => result.noContextBehaviorCorrect === null
+        ? null
+        : Number(result.noContextBehaviorCorrect)),
     ),
+    contextAvailabilityCorrectness: mean(
+      results.map((result) => Number(result.contextAvailabilityCorrect)),
+    ),
+    modelSemanticRefusalQuality: null,
   };
 }
 
@@ -323,7 +354,7 @@ function markdownReport(report: {
   aggregate: ReturnType<typeof aggregate>;
 }) {
   const metric = (value: number | null) => value === null ? "n/a" : value.toFixed(4);
-  return `# VaultRAG live evaluation\n\nGenerated: ${report.generatedAt}\n\nCases: ${report.caseCount}\n\n## Retrieval and reranking\n\n| Metric | Qdrant | Qdrant + Cohere |\n| --- | ---: | ---: |\n| Recall@K | ${metric(report.aggregate.vector.meanRecallAtK)} | ${metric(report.aggregate.reranked.meanRecallAtK)} |\n| Precision@K | ${metric(report.aggregate.vector.meanPrecisionAtK)} | ${metric(report.aggregate.reranked.meanPrecisionAtK)} |\n| MRR | ${metric(report.aggregate.vector.meanReciprocalRank)} | ${metric(report.aggregate.reranked.meanReciprocalRank)} |\n| Hit Rate@K | ${metric(report.aggregate.vector.meanHitRateAtK)} | ${metric(report.aggregate.reranked.meanHitRateAtK)} |\n\nMean reranking MRR delta: ${metric(report.aggregate.reranked.meanMrrDelta)}\n\n## Security and answer behavior\n\n- Authorization violation rate: ${metric(report.aggregate.security.authorizationViolationRate)} (${report.aggregate.security.unauthorizedContextChunks}/${report.aggregate.security.evaluatedContextOutputs})\n- Forbidden-document retrieval rate: ${metric(report.aggregate.security.forbiddenDocumentRetrievalRate)} (${report.aggregate.security.forbiddenRetrievals}/${report.aggregate.security.evaluatedRetrievalOutputs})\n- Refusal correctness: ${metric(report.aggregate.refusalCorrectness)}\n- Answerability correctness: ${metric(report.aggregate.answerabilityCorrectness)}\n`;
+  return `# VaultRAG live evaluation\n\nGenerated: ${report.generatedAt}\n\nCases: ${report.caseCount}\n\n## Document-level retrieval and reranking\n\nRanked chunks are deduplicated to document IDs by first occurrence before these metrics are calculated.\n\n| Metric | Qdrant | Qdrant + Cohere |\n| --- | ---: | ---: |\n| Recall@K | ${metric(report.aggregate.vector.meanRecallAtK)} | ${metric(report.aggregate.reranked.meanRecallAtK)} |\n| Precision@K | ${metric(report.aggregate.vector.meanPrecisionAtK)} | ${metric(report.aggregate.reranked.meanPrecisionAtK)} |\n| MRR | ${metric(report.aggregate.vector.meanReciprocalRank)} | ${metric(report.aggregate.reranked.meanReciprocalRank)} |\n| Hit Rate@K | ${metric(report.aggregate.vector.meanHitRateAtK)} | ${metric(report.aggregate.reranked.meanHitRateAtK)} |\n\nMean reranking MRR delta: ${metric(report.aggregate.reranked.meanMrrDelta)}\n\n## Security and answer behavior\n\n- Retrieval authorization violation rate: ${metric(report.aggregate.security.retrievalAuthorizationViolationRate)} (${report.aggregate.security.unauthorizedRetrievalChunks}/${report.aggregate.security.evaluatedRetrievalOutputs})\n- Context authorization violation rate: ${metric(report.aggregate.security.contextAuthorizationViolationRate)} (${report.aggregate.security.unauthorizedContextChunks}/${report.aggregate.security.evaluatedContextOutputs})\n- Forbidden-document retrieval rate: ${metric(report.aggregate.security.forbiddenDocumentRetrievalRate)} (${report.aggregate.security.forbiddenRetrievals}/${report.aggregate.security.evaluatedRetrievalOutputs})\n- Deterministic no-context behavior correctness: ${metric(report.aggregate.noContextBehaviorCorrectness)}\n- Context availability correctness: ${metric(report.aggregate.contextAvailabilityCorrectness)}\n- Model-level semantic refusal quality: not implemented (requires a deterministic judge contract)\n`;
 }
 
 async function main() {
