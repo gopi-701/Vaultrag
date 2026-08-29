@@ -15,6 +15,9 @@
     "typecheck": "tsc --noEmit",
     "data:generate": "tsx scripts/generate-synthetic-data.ts",
     "documents:prepare": "tsx scripts/prepare-documents.ts",
+    "eval": "npm run eval:validate",
+    "eval:validate": "node --conditions=react-server --import tsx scripts/run-evals.ts --validate-only",
+    "eval:live": "node --conditions=react-server --import tsx scripts/run-evals.ts",
     "db:setup": "tsx scripts/setup-db.ts",
     "db:ingest": "tsx scripts/ingest.ts"
   },
@@ -27,6 +30,7 @@
     "next": "16.3.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

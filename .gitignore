@@ -16,6 +16,10 @@
 # generated retrieval artifacts
 /data/prepared_chunks.json
 
+# environment-specific live evaluation output
+/evals/results/*.json
+/evals/results/latest.md
+
 # next.js
 /.next/
 /out/
