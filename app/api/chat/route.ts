@@ -7,6 +7,8 @@ import {
   type AnswerAuthorizedQueryInput,
 } from "@/lib/rag/answerQuery";
 
+export const runtime = "nodejs";
+
 const QuerySchema = z.string().trim().min(1).max(2_000);
 const EmployeeChatRequestSchema = z.object({ query: QuerySchema }).strict();
 const GuestChatRequestSchema = z

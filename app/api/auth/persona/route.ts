@@ -5,6 +5,8 @@ import {
 } from "@/lib/auth/personas";
 import { signToken } from "@/lib/auth/signToken";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const body: unknown = await request.json().catch(() => null);
   const result = PersonaRequestSchema.safeParse(body);
