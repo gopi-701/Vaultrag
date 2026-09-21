@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 describe("project foundation", () => {
-  it("is ready for implementation", () => {
-    expect(true).toBe(true);
+  it("loads the application test environment", async () => {
+    await expect(import("@/lib/env")).resolves.toBeDefined();
   });
 });
